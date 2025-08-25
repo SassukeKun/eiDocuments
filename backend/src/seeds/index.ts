@@ -4,9 +4,7 @@ import {
   TipoDocumento, 
   CategoriaDocumento, 
   Documento,
-  StatusDocumento,
-  DirecaoDocumento,
-  PrioridadeDocumento 
+  Usuario
 } from '../models';
 
 const seedDatabase = async () => {
@@ -20,8 +18,51 @@ const seedDatabase = async () => {
       Documento.deleteMany({}),
       CategoriaDocumento.deleteMany({}),
       TipoDocumento.deleteMany({}),
-      Departamento.deleteMany({})
+      Departamento.deleteMany({}),
+      Usuario.deleteMany({})
     ]);
+
+    // Criar Usuários
+    const usuarios = await Usuario.insertMany([
+      {
+        nome: 'Administrador',
+        email: 'admin@empresa.com',
+        senha: 'admin123',
+        ativo: true
+      },
+      {
+        nome: 'Gestor RH',
+        email: 'rh@empresa.com',
+        senha: 'rh123',
+        ativo: true
+      },
+      {
+        nome: 'Gestor Financeiro',
+        email: 'financeiro@empresa.com',
+        senha: 'fin123',
+        ativo: true
+      },
+      {
+        nome: 'Gestor Jurídico',
+        email: 'juridico@empresa.com',
+        senha: 'jur123',
+        ativo: true
+      },
+      {
+        nome: 'Gestor TI',
+        email: 'ti@empresa.com',
+        senha: 'ti123',
+        ativo: true
+      },
+      {
+        nome: 'Gestor Comercial',
+        email: 'comercial@empresa.com',
+        senha: 'com123',
+        ativo: true
+      }
+    ]);
+
+    console.log(`✅ Criados ${usuarios.length} usuários`);
 
     // Criar Departamentos
     const departamentos = await Departamento.insertMany([
@@ -172,57 +213,127 @@ const seedDatabase = async () => {
     // Criar alguns documentos de exemplo
     const documentos = await Documento.insertMany([
       {
-        numero: 'RH/2025/0001',
         titulo: 'Contrato de Trabalho - João Silva',
         descricao: 'Contrato de trabalho do novo funcionário João Silva',
         departamento: departamentos[0]._id,
         tipoDocumento: tiposDocumento.find(t => t.codigo === 'CONTRATO')?._id,
         categoriaDocumento: categoriasDocumento.find(c => c.codigo === 'PESSOAL')?._id,
-        dataDocumento: new Date('2025-01-15'),
-        status: StatusDocumento.APROVADO,
-        direcao: DirecaoDocumento.INTERNO,
-        prioridade: PrioridadeDocumento.ALTA,
-        usuarioCriador: 'admin',
-        usuarioResponsavel: 'rh_manager',
-        tags: ['contrato', 'admissão', 'joão silva']
+        dataCriacao: new Date('2025-01-15'),
+        status: 'aprovado',
+        arquivo: {
+          cloudinaryId: 'docs/contrato_joao_silva_001',
+          url: 'https://res.cloudinary.com/empresa/raw/upload/v1234567890/docs/contrato_joao_silva_001.pdf',
+          secureUrl: 'https://res.cloudinary.com/empresa/raw/upload/v1234567890/docs/contrato_joao_silva_001.pdf',
+          originalName: 'contrato_joao_silva.pdf',
+          format: 'pdf',
+          size: 245760,
+          uploadedAt: new Date('2025-01-15')
+        },
+        numeroProtocolo: 'RH/2025/0001',
+        assunto: 'Admissão de novo funcionário',
+        criadoPor: usuarios[1]._id, // Gestor RH
+        tags: ['contrato', 'admissão', 'joão silva'],
+        versao: 1
       },
       {
-        numero: 'FIN/2025/0001',
         titulo: 'Fatura Fornecedor ABC Ltda',
         descricao: 'Fatura de materiais de escritório',
         departamento: departamentos[1]._id,
         tipoDocumento: tiposDocumento.find(t => t.codigo === 'FATURA')?._id,
         categoriaDocumento: categoriasDocumento.find(c => c.codigo === 'FISCAL')?._id,
-        dataDocumento: new Date('2025-01-20'),
+        dataCriacao: new Date('2025-01-20'),
         dataRecebimento: new Date('2025-01-21'),
         dataVencimento: new Date('2025-02-20'),
-        status: StatusDocumento.PENDENTE,
-        direcao: DirecaoDocumento.RECEBIDO,
-        prioridade: PrioridadeDocumento.MEDIA,
+        status: 'pendente',
+        arquivo: {
+          cloudinaryId: 'docs/fatura_abc_ltda_001',
+          url: 'https://res.cloudinary.com/empresa/raw/upload/v1234567891/docs/fatura_abc_ltda_001.pdf',
+          secureUrl: 'https://res.cloudinary.com/empresa/raw/upload/v1234567891/docs/fatura_abc_ltda_001.pdf',
+          originalName: 'fatura_abc_janeiro_2025.pdf',
+          format: 'pdf',
+          size: 156890,
+          uploadedAt: new Date('2025-01-21')
+        },
+        numeroProtocolo: 'FIN/2025/0001',
+        numeroReferencia: 'ABC-2025-001',
+        assunto: 'Fornecimento de materiais de escritório',
         remetente: 'ABC Ltda',
-        enderecoRemetente: 'Rua das Empresas, 123 - Lisboa',
-        usuarioCriador: 'admin',
-        usuarioResponsavel: 'fin_manager',
-        tags: ['fatura', 'fornecedor', 'materiais']
+        criadoPor: usuarios[2]._id, // Gestor Financeiro
+        tags: ['fatura', 'fornecedor', 'materiais'],
+        versao: 1
       },
       {
-        numero: 'COM/2025/0001',
-        titulo: 'Carta Enviada - Proposta Comercial XYZ',
+        titulo: 'Proposta Comercial - Empresa XYZ',
         descricao: 'Proposta comercial enviada para cliente XYZ',
         departamento: departamentos[4]._id,
         tipoDocumento: tiposDocumento.find(t => t.codigo === 'CARTA_ENV')?._id,
         categoriaDocumento: categoriasDocumento.find(c => c.codigo === 'VENDAS')?._id,
-        dataDocumento: new Date('2025-01-18'),
+        dataCriacao: new Date('2025-01-18'),
         dataEnvio: new Date('2025-01-18'),
-        status: StatusDocumento.APROVADO,
-        direcao: DirecaoDocumento.ENVIADO,
-        prioridade: PrioridadeDocumento.ALTA,
+        status: 'aprovado',
+        arquivo: {
+          cloudinaryId: 'docs/proposta_xyz_001',
+          url: 'https://res.cloudinary.com/empresa/raw/upload/v1234567892/docs/proposta_xyz_001.pdf',
+          secureUrl: 'https://res.cloudinary.com/empresa/raw/upload/v1234567892/docs/proposta_xyz_001.pdf',
+          originalName: 'proposta_comercial_xyz.pdf',
+          format: 'pdf',
+          size: 892456,
+          uploadedAt: new Date('2025-01-18')
+        },
+        numeroProtocolo: 'COM/2025/0001',
+        numeroReferencia: 'PROP-XYZ-2025-001',
+        assunto: 'Proposta de fornecimento de serviços',
         destinatario: 'Empresa XYZ Lda',
-        enderecoDestinatario: 'Avenida Central, 456 - Porto',
-        usuarioCriador: 'admin',
-        usuarioResponsavel: 'com_manager',
+        criadoPor: usuarios[5]._id, // Gestor Comercial
         tags: ['proposta', 'cliente', 'xyz'],
-        confidencial: true
+        versao: 1
+      },
+      {
+        titulo: 'Relatório Mensal de Atividades TI',
+        descricao: 'Relatório mensal das atividades do departamento de TI',
+        departamento: departamentos[3]._id,
+        tipoDocumento: tiposDocumento.find(t => t.codigo === 'RELATORIO')?._id,
+        categoriaDocumento: categoriasDocumento.find(c => c.codigo === 'TECNICO')?._id,
+        dataCriacao: new Date('2025-01-31'),
+        status: 'rascunho',
+        arquivo: {
+          cloudinaryId: 'docs/relatorio_ti_jan_2025',
+          url: 'https://res.cloudinary.com/empresa/raw/upload/v1234567893/docs/relatorio_ti_jan_2025.docx',
+          secureUrl: 'https://res.cloudinary.com/empresa/raw/upload/v1234567893/docs/relatorio_ti_jan_2025.docx',
+          originalName: 'relatorio_atividades_ti_janeiro_2025.docx',
+          format: 'docx',
+          size: 445670,
+          uploadedAt: new Date('2025-01-31')
+        },
+        numeroProtocolo: 'TI/2025/0001',
+        assunto: 'Relatório mensal de atividades e projetos',
+        criadoPor: usuarios[4]._id, // Gestor TI
+        tags: ['relatório', 'atividades', 'mensal', 'ti'],
+        versao: 1
+      },
+      {
+        titulo: 'Memorando - Alteração de Horário',
+        descricao: 'Memorando interno sobre alteração de horário de funcionamento',
+        departamento: departamentos[0]._id,
+        tipoDocumento: tiposDocumento.find(t => t.codigo === 'MEMORANDO')?._id,
+        categoriaDocumento: categoriasDocumento.find(c => c.codigo === 'PESSOAL')?._id,
+        dataCriacao: new Date('2025-01-25'),
+        status: 'aprovado',
+        arquivo: {
+          cloudinaryId: 'docs/memorando_horario_001',
+          url: 'https://res.cloudinary.com/empresa/raw/upload/v1234567894/docs/memorando_horario_001.pdf',
+          secureUrl: 'https://res.cloudinary.com/empresa/raw/upload/v1234567894/docs/memorando_horario_001.pdf',
+          originalName: 'memorando_alteracao_horario.pdf',
+          format: 'pdf',
+          size: 123450,
+          uploadedAt: new Date('2025-01-25')
+        },
+        numeroProtocolo: 'RH/2025/0002',
+        assunto: 'Alteração de horário de funcionamento',
+        criadoPor: usuarios[1]._id, // Gestor RH
+        atualizadoPor: usuarios[0]._id, // Aprovado pelo Admin
+        tags: ['memorando', 'horário', 'funcionamento'],
+        versao: 2
       }
     ]);
 
