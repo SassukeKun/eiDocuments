@@ -1,29 +1,27 @@
 {
   "compilerOptions": {
-    /* Diretórios */
-    "rootDir": "./src",
-    "outDir": "./dist",
+    // Enable latest features
+    "lib": ["ESNext", "DOM"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "allowJs": true,
 
-    /* Ambiente Node.js moderno */
-    "target": "ES2020",
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    // Bundler mode
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
 
-    /* Tipos */
-    "lib": ["ES2020"],
-    "types": ["node"],
-
-    /* Debug & Build */
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
-    /* Boas práticas */
+    // Best practices
     "strict": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
-  },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+    "noFallthroughCasesInSwitch": true,
+
+    // Some stricter flags (disabled by default)
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noPropertyAccessFromIndexSignature": false
+  }
 }
