@@ -2,6 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDatabase } from './src/config/database';
+import { errorHandler } from './src/middleware/errorHandler.js';
+
+// Importar rotas
+import documentosRoutes from './src/routes/documentos.js';
+import departamentosRoutes from './src/routes/departamentos.js';
+import tiposDocumentoRoutes from './src/routes/tiposDocumento.js';
+import categoriasDocumentoRoutes from './src/routes/categoriasDocumento.js';
 
 dotenv.config();
 
@@ -32,6 +39,15 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development'
   });
 });
+
+// Rotas da API
+app.use('/api/documentos', documentosRoutes);
+app.use('/api/departamentos', departamentosRoutes);
+app.use('/api/tipos-documento', tiposDocumentoRoutes);
+app.use('/api/categorias-documento', categoriasDocumentoRoutes);
+
+// Middleware de tratamento de erros (deve vir por último)
+app.use(errorHandler);
 
 // Inicializar servidor
 const startServer = async () => {

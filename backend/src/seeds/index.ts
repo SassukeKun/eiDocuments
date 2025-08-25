@@ -22,30 +22,34 @@ const seedDatabase = async () => {
       Usuario.deleteMany({})
     ]);
 
-    // Criar Usuários
+    // Criar Usuários (simulando dados do Auth0)
     const usuarios = await Usuario.insertMany([
       {
+        auth0Id: 'auth0|admin123',
         nome: 'Administrador',
         email: 'admin@empresa.com',
-        senha: 'admin123',
+        roles: ['admin'],
         ativo: true
       },
       {
+        auth0Id: 'auth0|rh123',
         nome: 'Gestor RH',
         email: 'rh@empresa.com',
-        senha: 'rh123',
+        roles: ['editor'],
         ativo: true
       },
       {
+        auth0Id: 'auth0|fin123',
         nome: 'Gestor Financeiro',
         email: 'financeiro@empresa.com',
-        senha: 'fin123',
+        roles: ['editor'],
         ativo: true
       },
       {
+        auth0Id: 'auth0|jur123',
         nome: 'Gestor Jurídico',
         email: 'juridico@empresa.com',
-        senha: 'jur123',
+        roles: ['editor'],
         ativo: true
       },
       {
