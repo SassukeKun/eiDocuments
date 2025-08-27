@@ -55,6 +55,7 @@ export interface Documento {
   tipoMovimento: 'enviado' | 'recebido' | 'interno';
   remetente?: string;    // Para documentos recebidos
   destinatario?: string; // Para documentos enviados
+  responsavel?: string;  // Para documentos internos
   dataEnvio?: string;    // Para documentos enviados
   dataRecebimento?: string; // Para documentos recebidos
   arquivo: {
@@ -162,6 +163,7 @@ export interface CreateDocumento {
   tipoMovimento: 'enviado' | 'recebido' | 'interno';
   remetente?: string;
   destinatario?: string;
+  responsavel?: string;
   dataEnvio?: string;
   dataRecebimento?: string;
   tags?: string[];
@@ -184,3 +186,50 @@ export interface UpdateUsuario extends Partial<Omit<CreateUsuario, 'auth0Id'>> {
 // Tipos específicos para services
 export interface UsuarioCreateData extends CreateUsuario {}
 export interface UsuarioUpdateData extends UpdateUsuario {}
+
+// Tipos para paginação e query parameters
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface ApiPaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationInfo;
+  success: boolean;
+  message?: string;
+}
+
+export interface BaseQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface DepartamentoQueryParams extends BaseQueryParams {
+  ativo?: boolean;
+}
+
+export interface CategoriaQueryParams extends BaseQueryParams {
+  departamento?: string;
+  ativo?: boolean;
+}
+
+export interface TipoQueryParams extends BaseQueryParams {
+  ativo?: boolean;
+}
+
+export interface DocumentoQueryParams extends BaseQueryParams {
+  categoria?: string;
+  tipo?: string;
+  departamento?: string;
+  tipoMovimento?: 'enviado' | 'recebido' | 'interno';
+  status?: 'ativo' | 'arquivado';
+  ativo?: boolean;
+  dataInicio?: string;
+  dataFim?: string;
+}

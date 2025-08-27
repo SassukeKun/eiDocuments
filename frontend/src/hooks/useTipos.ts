@@ -165,6 +165,44 @@ export const useTipos = () => {
     }
   }, []);
 
+  // Carregar com paginação
+  const carregarPaginado = useCallback(async (
+    page: number = 1, 
+    limit: number = 10, 
+    search?: string,
+    sort?: { column: string; direction: 'asc' | 'desc' }
+  ) => {
+    try {
+      const params: TipoQueryParams = {
+        page,
+        limit,
+      };
+
+      if (search) {
+        params.search = search;
+      }
+
+      if (sort) {
+        params.sortBy = sort.column;
+        params.sortOrder = sort.direction;
+      }
+
+      const response = await TiposService.listar(params);
+      
+      return {
+        data: response.data,
+        total: response.total,
+        page: response.page,
+        totalPages: Math.ceil(response.total / response.limit),
+      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar tipos';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    }
+  }, [showError]);
+
   return {
     tipos,
     loading,
@@ -178,5 +216,6 @@ export const useTipos = () => {
     carregarAtivos,
     obterParaSelect,
     verificarCodigo,
+    carregarPaginado,
   };
 };

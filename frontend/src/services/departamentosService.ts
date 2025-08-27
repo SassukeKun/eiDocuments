@@ -77,4 +77,18 @@ export class DepartamentosService {
       return false;
     }
   }
+
+  // Obter departamentos para seleção (id + nome)
+  static async obterParaSelect(): Promise<{ value: string; label: string }[]> {
+    try {
+      const response = await this.listarAtivos();
+      return response.data.map(departamento => ({
+        value: departamento._id,
+        label: `${departamento.nome} (${departamento.codigo})`
+      }));
+    } catch (error) {
+      console.error('Erro ao obter departamentos para seleção:', error);
+      return [];
+    }
+  }
 }

@@ -4,49 +4,43 @@ import React, { useState, useEffect } from 'react';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
+import FormModal from '@/components/ui/FormModal';
+import CategoriaForm from '@/components/forms/CategoriaForm';
 import { FolderOpen, Edit, Trash2, Eye, Tag } from 'lucide-react';
-import { CategoriasService } from '@/services/categoriasService';
 import { CategoriaDocumento } from '@/types';
-import { useNotification } from '@/hooks/useNotification';
+import { useCategorias } from '@/hooks/useCategorias';
+import { usePaginatedData } from '@/hooks/usePaginatedData';
 
 const CategoriasPage = () => {
-  const [categorias, setCategorias] = useState<CategoriaDocumento[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const { success, error } = useNotification();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedCategoria, setSelectedCategoria] = useState<CategoriaDocumento | null>(null);
+  
+  const {
+    carregarPaginado,
+    remover
+  } = useCategorias();
+
+  // Hook de paginação com dados da API
+  const {
+    data: categorias,
+    loading,
+    error,
+    searchQuery,
+    setSearchQuery,
+    handleSort,
+    paginationProps,
+    refetch
+  } = usePaginatedData({
+    fetchData: carregarPaginado,
+    initialItemsPerPage: 10
+  });
 
   useEffect(() => {
-    loadCategorias();
+    // O usePaginatedData já carrega os dados automaticamente
   }, []);
-
-  const loadCategorias = async () => {
-    try {
-      setLoading(true);
-      const response = await CategoriasService.listar();
-      setCategorias(response.data || []);
-    } catch (err) {
-      error('Erro ao carregar categorias');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      loadCategorias();
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await CategoriasService.buscarPorTexto(query);
-      setCategorias(response.data || []);
-    } catch (err) {
-      error('Erro ao pesquisar categorias');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleDelete = async (categoria: CategoriaDocumento) => {
@@ -55,12 +49,33 @@ const CategoriasPage = () => {
     }
 
     try {
-      await CategoriasService.remover(categoria._id);
-      success('Categoria excluída com sucesso');
-      loadCategorias();
+      await remover(categoria._id);
+      refetch(); // Recarregar lista
     } catch (err) {
-      error('Erro ao excluir categoria');
+      // Erro já tratado pelo hook
+      console.error('Erro ao excluir categoria:', err);
     }
+  };
+
+  const handleAdd = () => {
+    setSelectedCategoria(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (categoria: CategoriaDocumento) => {
+    setSelectedCategoria(categoria);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSuccess = () => {
+    refetch(); // Recarregar lista após sucesso
+    setIsFormOpen(false); // Fechar modal
+    setSelectedCategoria(null); // Limpar seleção
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setSelectedCategoria(null);
   };
 
   const getColorClass = (cor: string) => {
@@ -163,9 +178,7 @@ const CategoriasPage = () => {
       key: 'edit',
       label: 'Editar',
       icon: <Edit className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Editar categoria:', record);
-      },
+      onClick: handleEdit,
     },
     {
       key: 'delete',
@@ -182,7 +195,7 @@ const CategoriasPage = () => {
         <PageHeader
           title="Categorias"
           subtitle="Gerencie as categorias de documentos"
-          onAdd={() => console.log('Adicionar categoria')}
+          onAdd={handleAdd}
           onSearch={handleSearch}
           onFilter={() => console.log('Filtrar categorias')}
           onExport={() => console.log('Exportar categorias')}
@@ -196,10 +209,21 @@ const CategoriasPage = () => {
           actions={actions}
           loading={loading}
           emptyMessage="Nenhuma categoria encontrada"
-          onSort={(column, direction) => {
-            console.log('Ordenar por:', column, direction);
-          }}
+          onSort={handleSort}
+          pagination={paginationProps}
         />
+
+        {/* Formulário Modal */}
+        <FormModal
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          title={selectedCategoria ? 'Editar Categoria' : 'Nova Categoria'}
+        >
+          <CategoriaForm
+            categoria={selectedCategoria}
+            onSuccess={handleFormSuccess}
+          />
+        </FormModal>
       </div>
     </ManageLayout>
   );

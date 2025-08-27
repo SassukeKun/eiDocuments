@@ -4,49 +4,43 @@ import React, { useState, useEffect } from 'react';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
+import FormModal from '@/components/ui/FormModal';
+import TipoForm from '@/components/forms/TipoForm';
 import { FileType, Edit, Trash2, Eye, File } from 'lucide-react';
-import { TiposService } from '@/services/tiposService';
 import { TipoDocumento } from '@/types';
-import { useNotification } from '@/hooks/useNotification';
+import { useTipos } from '@/hooks/useTipos';
+import { usePaginatedData } from '@/hooks/usePaginatedData';
 
 const TiposPage = () => {
-  const [tipos, setTipos] = useState<TipoDocumento[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const { success, error } = useNotification();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedTipo, setSelectedTipo] = useState<TipoDocumento | null>(null);
+  
+  const {
+    carregarPaginado,
+    remover
+  } = useTipos();
+
+  // Hook de paginação com dados da API
+  const {
+    data: tipos,
+    loading,
+    error,
+    searchQuery,
+    setSearchQuery,
+    handleSort,
+    paginationProps,
+    refetch
+  } = usePaginatedData({
+    fetchData: carregarPaginado,
+    initialItemsPerPage: 10
+  });
 
   useEffect(() => {
-    loadTipos();
+    // O usePaginatedData já carrega os dados automaticamente
   }, []);
-
-  const loadTipos = async () => {
-    try {
-      setLoading(true);
-      const response = await TiposService.listar();
-      setTipos(response.data || []);
-    } catch (err) {
-      error('Erro ao carregar tipos');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      loadTipos();
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await TiposService.buscarPorTexto(query);
-      setTipos(response.data || []);
-    } catch (err) {
-      error('Erro ao pesquisar tipos');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleDelete = async (tipo: TipoDocumento) => {
@@ -55,12 +49,33 @@ const TiposPage = () => {
     }
 
     try {
-      await TiposService.remover(tipo._id);
-      success('Tipo excluído com sucesso');
-      loadTipos();
+      await remover(tipo._id);
+      refetch(); // Recarregar lista
     } catch (err) {
-      error('Erro ao excluir tipo');
+      // Erro já tratado pelo hook
+      console.error('Erro ao excluir tipo:', err);
     }
+  };
+
+  const handleAdd = () => {
+    setSelectedTipo(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (tipo: TipoDocumento) => {
+    setSelectedTipo(tipo);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSuccess = () => {
+    refetch(); // Recarregar lista após sucesso
+    setIsFormOpen(false); // Fechar modal
+    setSelectedTipo(null); // Limpar seleção
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setSelectedTipo(null);
   };
 
   const getExtensionBadge = (extensoes: string[]) => {
@@ -179,9 +194,7 @@ const TiposPage = () => {
       key: 'edit',
       label: 'Editar',
       icon: <Edit className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Editar tipo:', record);
-      },
+      onClick: handleEdit,
     },
     {
       key: 'delete',
@@ -198,7 +211,7 @@ const TiposPage = () => {
         <PageHeader
           title="Tipos de Documento"
           subtitle="Gerencie os tipos de documentos permitidos"
-          onAdd={() => console.log('Adicionar tipo')}
+          onAdd={handleAdd}
           onSearch={handleSearch}
           onFilter={() => console.log('Filtrar tipos')}
           onExport={() => console.log('Exportar tipos')}
@@ -212,10 +225,21 @@ const TiposPage = () => {
           actions={actions}
           loading={loading}
           emptyMessage="Nenhum tipo encontrado"
-          onSort={(column, direction) => {
-            console.log('Ordenar por:', column, direction);
-          }}
+          onSort={handleSort}
+          pagination={paginationProps}
         />
+
+        {/* Formulário Modal */}
+        <FormModal
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          title={selectedTipo ? 'Editar Tipo' : 'Novo Tipo'}
+        >
+          <TipoForm
+            tipo={selectedTipo}
+            onSuccess={handleFormSuccess}
+          />
+        </FormModal>
       </div>
     </ManageLayout>
   );

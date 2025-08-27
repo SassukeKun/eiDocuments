@@ -1,8 +1,10 @@
 "use client";
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
 import ModernButton from './ModernButton';
+import TablePagination from './TablePagination';
 
 export interface TableColumn<T = any> {
   key: string;
@@ -28,6 +30,17 @@ interface DataTableProps<T = any> {
   emptyMessage?: string;
   onSort?: (column: string, direction: 'asc' | 'desc') => void;
   className?: string;
+  // Propriedades de paginação
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    onPageChange: (page: number) => void;
+    onItemsPerPageChange: (itemsPerPage: number) => void;
+    showItemsPerPage?: boolean;
+    itemsPerPageOptions?: number[];
+  };
 }
 
 const DataTable = <T extends Record<string, any>>({
@@ -38,10 +51,47 @@ const DataTable = <T extends Record<string, any>>({
   emptyMessage = "Nenhum item encontrado",
   onSort,
   className = "",
+  pagination,
 }: DataTableProps<T>) => {
   const [sortColumn, setSortColumn] = React.useState<string>('');
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
   const [openDropdown, setOpenDropdown] = React.useState<number | null>(null);
+  const [dropdownPosition, setDropdownPosition] = React.useState({ x: 0, y: 0 });
+  const [mounted, setMounted] = React.useState(false);
+
+  // Garantir que o componente foi montado (para evitar problemas de SSR)
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Fechar dropdown quando clicar fora ou rolar
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      // Verificar se o clique não foi no dropdown nem no botão
+      if (openDropdown !== null && 
+          !target.closest('[data-dropdown]') && 
+          !target.closest('[data-dropdown-button]')) {
+        setOpenDropdown(null);
+      }
+    };
+
+    const handleScroll = () => {
+      if (openDropdown !== null) {
+        setOpenDropdown(null);
+      }
+    };
+
+    if (openDropdown !== null) {
+      document.addEventListener('click', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [openDropdown]);
 
   const handleSort = (column: TableColumn<T>) => {
     if (!column.sortable) return;
@@ -98,7 +148,7 @@ const DataTable = <T extends Record<string, any>>({
   }
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${className}`}>
+    <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
@@ -151,35 +201,28 @@ const DataTable = <T extends Record<string, any>>({
                   </td>
                 ))}
                 {allActions.length > 0 && (
-                  <td className="px-6 py-4 whitespace-nowrap text-right relative">
-                    <button
-                      onClick={() => setOpenDropdown(openDropdown === index ? null : index)}
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <MoreVertical className="w-4 h-4 text-gray-400" />
-                    </button>
-                    
-                    {openDropdown === index && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                        {allActions.map((action) => (
-                          <button
-                            key={action.key}
-                            onClick={() => {
-                              action.onClick(record);
-                              setOpenDropdown(null);
-                            }}
-                            className={`
-                              w-full px-4 py-2 text-left text-sm flex items-center space-x-2
-                              hover:bg-gray-50 transition-colors
-                              ${action.variant === 'danger' ? 'text-red-600 hover:bg-red-50' : 'text-gray-700'}
-                            `}
-                          >
-                            {action.icon}
-                            <span>{action.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="relative inline-block">
+                      <button
+                        data-dropdown-button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (openDropdown === index) {
+                            setOpenDropdown(null);
+                          } else {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setDropdownPosition({
+                              x: rect.right - 192, // 192px é a largura do dropdown (w-48)
+                              y: rect.bottom + 4
+                            });
+                            setOpenDropdown(index);
+                          }
+                        }}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <MoreVertical className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
                   </td>
                 )}
               </tr>
@@ -187,6 +230,51 @@ const DataTable = <T extends Record<string, any>>({
           </tbody>
         </table>
       </div>
+      
+      {/* Paginação */}
+      {pagination && (
+        <TablePagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.totalItems}
+          itemsPerPage={pagination.itemsPerPage}
+          onPageChange={pagination.onPageChange}
+          onItemsPerPageChange={pagination.onItemsPerPageChange}
+          showItemsPerPage={pagination.showItemsPerPage}
+          itemsPerPageOptions={pagination.itemsPerPageOptions}
+        />
+      )}
+
+      {/* Portal dropdown */}
+      {mounted && openDropdown !== null && createPortal(
+        <div
+          data-dropdown
+          className="fixed w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999]"
+          style={{
+            left: dropdownPosition.x,
+            top: dropdownPosition.y,
+          }}
+        >
+          {allActions.map((action) => (
+            <button
+              key={action.key}
+              onClick={() => {
+                action.onClick(data[openDropdown]);
+                setOpenDropdown(null);
+              }}
+              className={`
+                w-full px-4 py-2 text-left text-sm flex items-center space-x-2
+                hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg
+                ${action.variant === 'danger' ? 'text-red-600 hover:bg-red-50' : 'text-gray-700'}
+              `}
+            >
+              {action.icon}
+              <span>{action.label}</span>
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

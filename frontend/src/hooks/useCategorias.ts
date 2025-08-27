@@ -178,6 +178,44 @@ export const useCategorias = () => {
     }
   }, []);
 
+  // Carregar com paginação
+  const carregarPaginado = useCallback(async (
+    page: number = 1, 
+    limit: number = 10, 
+    search?: string,
+    sort?: { column: string; direction: 'asc' | 'desc' }
+  ) => {
+    try {
+      const params: CategoriaQueryParams = {
+        page,
+        limit,
+      };
+
+      if (search) {
+        params.search = search;
+      }
+
+      if (sort) {
+        params.sortBy = sort.column;
+        params.sortOrder = sort.direction;
+      }
+
+      const response = await CategoriasService.listar(params);
+      
+      return {
+        data: response.data,
+        total: response.total,
+        page: response.page,
+        totalPages: Math.ceil(response.total / response.limit),
+      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar categorias';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    }
+  }, [showError]);
+
   return {
     categorias,
     loading,
@@ -192,5 +230,6 @@ export const useCategorias = () => {
     carregarPorDepartamento,
     obterParaSelect,
     verificarCodigo,
+    carregarPaginado,
   };
 };

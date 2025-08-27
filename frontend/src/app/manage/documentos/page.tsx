@@ -4,85 +4,77 @@ import React, { useState, useEffect } from 'react';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
+import DocumentoForm from '@/components/forms/DocumentoForm';
 import { FileText, Edit, Trash2, Eye, Download, Building2, FolderOpen } from 'lucide-react';
-import { useNotification } from '@/hooks/useNotification';
-
-// Dados de exemplo - substituir por service real quando estiver pronto
-const mockDocuments = [
-  {
-    _id: '1',
-    titulo: 'Relatório Anual 2024',
-    descricao: 'Relatório completo das atividades do ano',
-    arquivo: {
-      nomeOriginal: 'relatorio-2024.pdf',
-      tamanho: 2048576,
-      tipo: 'application/pdf',
-    },
-    departamento: { nome: 'Administração', codigo: 'ADM' },
-    categoria: { nome: 'Relatórios', cor: 'blue' },
-    tipo: { nome: 'PDF', codigo: 'PDF' },
-    criadoPor: { nome: 'João Silva' },
-    dataCriacao: new Date().toISOString(),
-    ativo: true,
-    tags: ['relatório', 'anual', '2024'],
-  },
-  {
-    _id: '2',
-    titulo: 'Manual de Procedimentos',
-    descricao: 'Manual interno de procedimentos operacionais',
-    arquivo: {
-      nomeOriginal: 'manual-procedimentos.docx',
-      tamanho: 1048576,
-      tipo: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    },
-    departamento: { nome: 'Recursos Humanos', codigo: 'RH' },
-    categoria: { nome: 'Manuais', cor: 'green' },
-    tipo: { nome: 'Word', codigo: 'DOCX' },
-    criadoPor: { nome: 'Maria Santos' },
-    dataCriacao: new Date(Date.now() - 86400000).toISOString(),
-    ativo: true,
-    tags: ['manual', 'procedimentos'],
-  },
-];
+import { Documento } from '@/types';
+import { useDocumentos } from '@/hooks/useDocumentos';
 
 const DocumentosPage = () => {
-  const [documentos, setDocumentos] = useState(mockDocuments);
-  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { success, error } = useNotification();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedDocumento, setSelectedDocumento] = useState<Documento | null>(null);
+  
+  const {
+    documentos,
+    loading,
+    carregar,
+    buscarPorTexto,
+    remover,
+    baixar
+  } = useDocumentos();
 
-  const handleSearch = (query: string) => {
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
+
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (!query.trim()) {
-      setDocumentos(mockDocuments);
+      carregar();
       return;
     }
-
-    const filtered = mockDocuments.filter(doc =>
-      doc.titulo.toLowerCase().includes(query.toLowerCase()) ||
-      doc.descricao?.toLowerCase().includes(query.toLowerCase()) ||
-      doc.departamento.nome.toLowerCase().includes(query.toLowerCase())
-    );
-    setDocumentos(filtered);
+    buscarPorTexto(query);
   };
 
-  const handleDelete = async (documento: any) => {
+  const handleDelete = async (documento: Documento) => {
     if (!confirm(`Deseja realmente excluir o documento "${documento.titulo}"?`)) {
       return;
     }
 
     try {
-      // Implementar service de exclusão
-      success('Documento excluído com sucesso');
-      setDocumentos(prev => prev.filter(d => d._id !== documento._id));
+      await remover(documento._id);
+      carregar(); // Recarregar lista
     } catch (err) {
-      error('Erro ao excluir documento');
+      // Erro já tratado pelo hook
+      console.error('Erro ao excluir documento:', err);
     }
   };
 
-  const handleDownload = (documento: any) => {
-    // Implementar download do documento
-    success(`Download de "${documento.titulo}" iniciado`);
+  const handleDownload = async (documento: Documento) => {
+    try {
+      await baixar(documento._id);
+    } catch (err) {
+      console.error('Erro ao baixar documento:', err);
+    }
+  };
+
+  const handleAdd = () => {
+    setSelectedDocumento(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (documento: Documento) => {
+    setSelectedDocumento(documento);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSuccess = () => {
+    carregar(); // Recarregar lista após sucesso
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setSelectedDocumento(null);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -161,13 +153,47 @@ const DocumentosPage = () => {
       ),
     },
     {
-      key: 'criadoPor',
-      title: 'Criado por',
-      sortable: true,
-      width: 'w-28',
-      render: (value) => (
-        <span className="text-sm text-gray-600">{value.nome}</span>
-      ),
+      key: 'tipoMovimento',
+      title: 'Movimento/Responsável',
+      sortable: false,
+      width: 'w-40',
+      render: (value, record: any) => {
+        const movementConfig: Record<string, { bg: string; text: string; label: string }> = {
+          'recebido': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Recebido' },
+          'enviado': { bg: 'bg-green-100', text: 'text-green-800', label: 'Enviado' },
+          'interno': { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Interno' }
+        };
+        
+        const config = movementConfig[value] || movementConfig.interno;
+        
+        let person = '';
+        let personLabel = '';
+        
+        if (value === 'recebido' && record.remetente) {
+          person = record.remetente;
+          personLabel = 'De:';
+        } else if (value === 'enviado' && record.destinatario) {
+          person = record.destinatario;
+          personLabel = 'Para:';
+        } else if (value === 'interno' && record.responsavel) {
+          person = record.responsavel;
+          personLabel = 'Resp:';
+        }
+        
+        return (
+          <div className="space-y-1">
+            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.bg} ${config.text}`}>
+              {config.label}
+            </span>
+            {person && (
+              <div className="text-sm">
+                <div className="text-xs text-gray-500">{personLabel}</div>
+                <div className="text-gray-900 font-medium truncate">{person}</div>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'dataCriacao',
@@ -218,9 +244,7 @@ const DocumentosPage = () => {
       key: 'edit',
       label: 'Editar',
       icon: <Edit className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Editar documento:', record);
-      },
+      onClick: handleEdit,
     },
     {
       key: 'delete',
@@ -237,7 +261,7 @@ const DocumentosPage = () => {
         <PageHeader
           title="Documentos"
           subtitle="Gerencie todos os documentos do sistema"
-          onAdd={() => console.log('Adicionar documento')}
+          onAdd={handleAdd}
           onSearch={handleSearch}
           onFilter={() => console.log('Filtrar documentos')}
           onExport={() => console.log('Exportar documentos')}
@@ -254,6 +278,13 @@ const DocumentosPage = () => {
           onSort={(column, direction) => {
             console.log('Ordenar por:', column, direction);
           }}
+        />
+
+        <DocumentoForm
+          isOpen={isFormOpen}
+          onClose={handleFormClose}
+          onSuccess={handleFormSuccess}
+          documento={selectedDocumento}
         />
       </div>
     </ManageLayout>

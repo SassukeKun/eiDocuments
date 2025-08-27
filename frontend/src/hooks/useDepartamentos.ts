@@ -140,6 +140,55 @@ export const useDepartamentos = () => {
     }
   }, [showError]);
 
+  // Obter para select
+  const obterParaSelect = useCallback(async () => {
+    try {
+      return await DepartamentosService.obterParaSelect();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao obter departamentos para seleção';
+      showError(errorMessage);
+      return [];
+    }
+  }, [showError]);
+
+  // Carregar com paginação (nova função)
+  const carregarPaginado = useCallback(async (
+    page: number = 1, 
+    limit: number = 10, 
+    search?: string,
+    sort?: { column: string; direction: 'asc' | 'desc' }
+  ) => {
+    try {
+      const params: DepartamentoQueryParams = {
+        page,
+        limit,
+      };
+
+      if (search) {
+        params.search = search;
+      }
+
+      if (sort) {
+        params.sortBy = sort.column;
+        params.sortOrder = sort.direction;
+      }
+
+      const response = await DepartamentosService.listar(params);
+      
+      return {
+        data: response.data,
+        total: response.total,
+        page: response.page,
+        totalPages: Math.ceil(response.total / response.limit),
+      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar departamentos';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    }
+  }, [showError]);
+
   // Verificar se código existe
   const verificarCodigo = useCallback(async (codigo: string, excluirId?: string) => {
     try {
@@ -155,12 +204,14 @@ export const useDepartamentos = () => {
     loading,
     error,
     carregar,
+    carregarPaginado,
     buscarPorId,
     criar,
     atualizar,
     remover,
     buscarPorTexto,
     carregarAtivos,
+    obterParaSelect,
     verificarCodigo,
   };
 };

@@ -1,78 +1,47 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import { Users, Edit, Trash2, Eye, Shield, User, Mail, Building2 } from 'lucide-react';
-import { useNotification } from '@/hooks/useNotification';
-
-// Dados de exemplo - substituir por service real quando estiver pronto
-const mockUsers = [
-  {
-    _id: '1',
-    nome: 'João Silva',
-    email: 'joao.silva@empresa.com',
-    departamento: { nome: 'Administração', codigo: 'ADM' },
-    role: 'admin',
-    ativo: true,
-    dataCriacao: new Date().toISOString(),
-    ultimoLogin: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    _id: '2',
-    nome: 'Maria Santos',
-    email: 'maria.santos@empresa.com',
-    departamento: { nome: 'Recursos Humanos', codigo: 'RH' },
-    role: 'user',
-    ativo: true,
-    dataCriacao: new Date(Date.now() - 86400000).toISOString(),
-    ultimoLogin: new Date(Date.now() - 7200000).toISOString(),
-  },
-  {
-    _id: '3',
-    nome: 'Pedro Oliveira',
-    email: 'pedro.oliveira@empresa.com',
-    departamento: { nome: 'TI', codigo: 'TI' },
-    role: 'manager',
-    ativo: false,
-    dataCriacao: new Date(Date.now() - 172800000).toISOString(),
-    ultimoLogin: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
+import { Usuario } from '@/services/usuariosService';
+import { useUsuarios } from '@/hooks/useUsuarios';
 
 const UsuariosPage = () => {
-  const [usuarios, setUsuarios] = useState(mockUsers);
-  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { success, error } = useNotification();
+  const {
+    usuarios,
+    loading,
+    carregar,
+    buscarPorTexto,
+    remover
+  } = useUsuarios();
 
-  const handleSearch = (query: string) => {
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
+
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (!query.trim()) {
-      setUsuarios(mockUsers);
+      carregar();
       return;
     }
-
-    const filtered = mockUsers.filter(user =>
-      user.nome.toLowerCase().includes(query.toLowerCase()) ||
-      user.email.toLowerCase().includes(query.toLowerCase()) ||
-      user.departamento.nome.toLowerCase().includes(query.toLowerCase())
-    );
-    setUsuarios(filtered);
+    buscarPorTexto(query);
   };
 
-  const handleDelete = async (usuario: any) => {
+  const handleDelete = async (usuario: Usuario) => {
     if (!confirm(`Deseja realmente excluir o usuário "${usuario.nome}"?`)) {
       return;
     }
 
     try {
-      // Implementar service de exclusão
-      success('Usuário excluído com sucesso');
-      setUsuarios(prev => prev.filter(u => u._id !== usuario._id));
+      await remover(usuario._id);
+      carregar(); // Recarregar lista
     } catch (err) {
-      error('Erro ao excluir usuário');
+      // Erro já tratado pelo hook
+      console.error('Erro ao excluir usuário:', err);
     }
   };
 
@@ -150,8 +119,7 @@ const UsuariosPage = () => {
         <div className="flex items-center space-x-2">
           <Building2 className="w-4 h-4 text-gray-400" />
           <div>
-            <div className="font-medium text-sm">{value.nome}</div>
-            <div className="text-xs text-gray-500">{value.codigo}</div>
+            <div className="font-medium text-sm">{typeof value === 'string' ? value : value?.nome || 'N/A'}</div>
           </div>
         </div>
       ),

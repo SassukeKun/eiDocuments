@@ -4,49 +4,43 @@ import React, { useState, useEffect } from 'react';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
+import FormModal from '@/components/ui/FormModal';
+import DepartamentoForm from '@/components/forms/DepartamentoForm';
 import { Building2, Edit, Trash2, Eye } from 'lucide-react';
-import { DepartamentosService } from '@/services/departamentosService';
 import { Departamento } from '@/types';
-import { useNotification } from '@/hooks/useNotification';
+import { useDepartamentos } from '@/hooks/useDepartamentos';
+import { usePaginatedData } from '@/hooks/usePaginatedData';
 
 const DepartamentosPage = () => {
-  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const { success, error } = useNotification();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedDepartamento, setSelectedDepartamento] = useState<Departamento | null>(null);
+  
+  const {
+    carregarPaginado,
+    remover
+  } = useDepartamentos();
+
+  // Hook de paginação com dados da API
+  const {
+    data: departamentos,
+    loading,
+    error,
+    searchQuery,
+    setSearchQuery,
+    handleSort,
+    paginationProps,
+    refetch
+  } = usePaginatedData({
+    fetchData: carregarPaginado,
+    initialItemsPerPage: 10
+  });
 
   useEffect(() => {
-    loadDepartamentos();
+    // O usePaginatedData já carrega os dados automaticamente
   }, []);
-
-  const loadDepartamentos = async () => {
-    try {
-      setLoading(true);
-      const response = await DepartamentosService.listar();
-      setDepartamentos(response.data || []);
-    } catch (err) {
-      error('Erro ao carregar departamentos');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      loadDepartamentos();
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await DepartamentosService.buscarPorTexto(query);
-      setDepartamentos(response.data || []);
-    } catch (err) {
-      error('Erro ao pesquisar departamentos');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleDelete = async (departamento: Departamento) => {
@@ -55,12 +49,33 @@ const DepartamentosPage = () => {
     }
 
     try {
-      await DepartamentosService.remover(departamento._id);
-      success('Departamento excluído com sucesso');
-      loadDepartamentos();
+      await remover(departamento._id);
+      refetch(); // Recarregar lista
     } catch (err) {
-      error('Erro ao excluir departamento');
+      // Erro já tratado pelo hook
+      console.error('Erro ao excluir departamento:', err);
     }
+  };
+
+  const handleAdd = () => {
+    setSelectedDepartamento(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (departamento: Departamento) => {
+    setSelectedDepartamento(departamento);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSuccess = () => {
+    refetch(); // Recarregar lista após sucesso
+    setIsFormOpen(false); // Fechar modal
+    setSelectedDepartamento(null); // Limpar seleção
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setSelectedDepartamento(null);
   };
 
   const columns: TableColumn<Departamento>[] = [
@@ -136,9 +151,7 @@ const DepartamentosPage = () => {
       key: 'edit',
       label: 'Editar',
       icon: <Edit className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Editar departamento:', record);
-      },
+      onClick: handleEdit,
     },
     {
       key: 'delete',
@@ -155,7 +168,7 @@ const DepartamentosPage = () => {
         <PageHeader
           title="Departamentos"
           subtitle="Gerencie os departamentos da organização"
-          onAdd={() => console.log('Adicionar departamento')}
+          onAdd={handleAdd}
           onSearch={handleSearch}
           onFilter={() => console.log('Filtrar departamentos')}
           onExport={() => console.log('Exportar departamentos')}
@@ -169,10 +182,21 @@ const DepartamentosPage = () => {
           actions={actions}
           loading={loading}
           emptyMessage="Nenhum departamento encontrado"
-          onSort={(column, direction) => {
-            console.log('Ordenar por:', column, direction);
-          }}
+          pagination={paginationProps}
+          onSort={handleSort}
         />
+
+        {/* Formulário Modal */}
+        <FormModal
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          title={selectedDepartamento ? 'Editar Departamento' : 'Novo Departamento'}
+        >
+          <DepartamentoForm
+            departamento={selectedDepartamento}
+            onSuccess={handleFormSuccess}
+          />
+        </FormModal>
       </div>
     </ManageLayout>
   );
