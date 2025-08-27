@@ -122,9 +122,32 @@ export const useDocumentos = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await DocumentosService.baixar(id);
+
+      // Passo 1: Buscar o documento para obter o nome do arquivo
+      const documento = await DocumentosService.buscarPorId(id);
+
+      if (!documento || !documento.data?.arquivo?.originalName) {
+        throw new Error('Informações do arquivo não encontradas.');
+      }
+
+      const originalName = documento.data.arquivo.originalName;
+
+      // Passo 2: Fazer a chamada para obter o Blob do arquivo
+      const blob = await DocumentosService.baixar(id);
+
+      // Passo 3: Iniciar o download no navegador
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = originalName;
+      document.body.appendChild(link);
+      link.click();
+
+      // Limpar
+      window.URL.revokeObjectURL(url);
+      link.remove();
+
       success('Download iniciado');
-      return response;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao baixar documento';
       setError(errorMessage);
@@ -142,12 +165,12 @@ export const useDocumentos = () => {
       setError(null);
       const response = await DocumentosService.atualizarStatus(id, status);
       success(`Documento ${status === 'ativo' ? 'ativado' : 'arquivado'} com sucesso`);
-      
+
       // Atualizar lista local
-      setDocumentos(prev => prev.map(doc => 
+      setDocumentos(prev => prev.map(doc =>
         doc._id === id ? { ...doc, status } : doc
       ));
-      
+
       return response.data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar status';
