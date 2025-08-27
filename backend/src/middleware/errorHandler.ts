@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { ApiResponse } from '../types/api.js';
 import { AppError, ErrorCodes } from '../types/errors.js';
+import { ZodError } from 'zod';
 
 export const errorHandler = (
   error: Error,
@@ -28,6 +29,20 @@ export const errorHandler = (
     };
     
     return res.status(error.statusCode).json(response);
+  }
+
+  // Erros do Zod
+  if (error instanceof ZodError) {
+    const response: ApiResponse = {
+      success: false,
+      error: {
+        code: ErrorCodes.VALIDATION_ERROR,
+        message: 'Dados inválidos',
+        details: error.issues.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
+      }
+    };
+    
+    return res.status(400).json(response);
   }
 
   // Erros do Mongoose

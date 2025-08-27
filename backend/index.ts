@@ -5,6 +5,7 @@ import { connectDatabase } from './src/config/database';
 import { errorHandler } from './src/middleware/errorHandler.js';
 
 // Importar rotas
+import authRoutes from './src/routes/auth.js';
 import documentosRoutes from './src/routes/documentos.js';
 import departamentosRoutes from './src/routes/departamentos.js';
 import tiposDocumentoRoutes from './src/routes/tiposDocumento.js';
@@ -41,6 +42,7 @@ app.get('/health', (req, res) => {
 });
 
 // Rotas da API
+app.use('/api/auth', authRoutes);
 app.use('/api/documentos', documentosRoutes);
 app.use('/api/departamentos', departamentosRoutes);
 app.use('/api/tipos-documento', tiposDocumentoRoutes);

@@ -1,20 +1,16 @@
 import type { Response } from 'express';
-import type { ApiResponse, PaginationMeta } from '../types/api.js';
-import { AppError } from '../types/errors.js';
 
-export class ApiResponseHelper {
+export class ApiResponse {
   static success<T>(
     res: Response,
     data?: T,
     message?: string,
-    statusCode: number = 200,
-    pagination?: PaginationMeta
+    statusCode: number = 200
   ): Response {
-    const response: ApiResponse<T> = {
+    const response = {
       success: true,
       data,
-      message,
-      pagination
+      message
     };
 
     return res.status(statusCode).json(response);
@@ -22,53 +18,40 @@ export class ApiResponseHelper {
 
   static error(
     res: Response,
-    error: AppError | Error,
-    statusCode?: number
+    message: string,
+    statusCode: number = 500,
+    code?: string
   ): Response {
-    if (error instanceof AppError) {
-      const response: ApiResponse = {
-        success: false,
-        error: {
-          code: error.code,
-          message: error.message,
-          details: error.details
-        }
-      };
-      
-      return res.status(error.statusCode).json(response);
-    }
-
-    // Erro genérico
-    const response: ApiResponse = {
+    const response = {
       success: false,
       error: {
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Internal server error'
+        code: code || 'ERROR',
+        message
       }
     };
 
-    return res.status(statusCode || 500).json(response);
+    return res.status(statusCode).json(response);
   }
 
-  static paginated<T>(
-    res: Response,
-    data: T[],
-    page: number,
-    limit: number,
-    total: number,
-    message?: string
-  ): Response {
-    const totalPages = Math.ceil(total / limit);
-    
-    const pagination: PaginationMeta = {
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNext: page < totalPages,
-      hasPrev: page > 1
+  // Métodos que retornam o objeto da resposta (para uso com res.json())
+  static successData<T>(data?: T, message?: string) {
+    return {
+      success: true,
+      data,
+      message
     };
+  }
 
-    return this.success(res, data, message, 200, pagination);
+  static errorData(message: string, code?: string) {
+    return {
+      success: false,
+      error: {
+        code: code || 'ERROR',
+        message
+      }
+    };
   }
 }
+
+// Alias para compatibilidade com código existente
+export const ApiResponseHelper = ApiResponse;
