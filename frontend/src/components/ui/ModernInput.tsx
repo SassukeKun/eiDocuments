@@ -8,6 +8,7 @@ interface ModernInputProps {
   placeholder: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   label?: string;
   error?: string | null;
   success?: boolean;
@@ -21,6 +22,7 @@ const ModernInput: React.FC<ModernInputProps> = ({
   placeholder,
   value,
   onChange,
+  onKeyDown,
   label,
   error,
   success = false,
@@ -56,6 +58,7 @@ const ModernInput: React.FC<ModernInputProps> = ({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
+          onKeyDown={onKeyDown}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           className={`
