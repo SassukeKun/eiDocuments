@@ -38,7 +38,7 @@ interface Department {
 }
 
 const UploadPage = () => {
-  const { success, showError } = useNotification();
+  const { success, error } = useNotification();
   const router = useRouter();
   
   const [files, setFiles] = useState<UploadFile[]>([]);
@@ -145,7 +145,7 @@ const UploadPage = () => {
 
         validFiles.push(uploadFile);
       } else {
-        showError("Arquivo inválido", validation.error);
+        error("Arquivo inválido", validation.error);
       }
     });
 
@@ -196,12 +196,12 @@ const UploadPage = () => {
 
   const handleUpload = async () => {
     if (files.length === 0) {
-      showError("Erro", "Selecione pelo menos um arquivo para upload");
+              error("Erro", "Selecione pelo menos um arquivo para upload");
       return;
     }
 
     if (!selectedDepartment) {
-      showError("Erro", "Selecione um departamento");
+              error("Erro", "Selecione um departamento");
       return;
     }
 
@@ -437,7 +437,7 @@ const UploadPage = () => {
                 placeholder="Adicionar tag..."
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={handleTagKeyPress}
+                onKeyDown={handleTagKeyPress}
                 icon={<Tag className="h-5 w-5 text-gray-400" />}
                 className="flex-1"
               />
