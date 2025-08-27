@@ -1,143 +1,127 @@
-// Configuração da API baseada no FRONTEND_REQUIREMENTS.md
+// Configuração base da API
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
-// Função para construir URLs com query parameters
-export function buildApiUrl(endpoint: string, params?: Record<string, string | number | boolean>): string {
-  const url = new URL(`${API_BASE_URL}${endpoint}`);
-  
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        url.searchParams.append(key, String(value));
-      }
-    });
-  }
-  
-  return url.toString();
+// Tipos base para respostas da API
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
 }
 
-// Função para fazer requisições HTTP com tratamento de erro padrão
-export async function apiRequest<T>(
-  url: string, 
+export interface ApiPaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface ApiErrorResponse {
+  success: false;
+  message: string;
+  details?: any;
+}
+
+// Função base para requisições
+async function apiRequest<T>(
+  endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const config: RequestInit = {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  };
+
+  // Se o body é FormData, não definir Content-Type (deixar o browser definir)
+  if (options.body instanceof FormData) {
+    delete (config.headers as Record<string, string>)['Content-Type'];
+  }
+
   try {
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
-
-          if (!response.ok) {
-        // Tentar obter mais detalhes sobre o erro
-        let errorMessage = `HTTP error! status: ${response.status}`;
-        let errorDetails = '';
-        
-        try {
-          const errorText = await response.text();
-          if (errorText) {
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.message || errorData.error || errorText;
-              // Capturar detalhes específicos de validação
-              if (errorData.details) {
-                if (typeof errorData.details === 'object') {
-                  errorDetails = Object.entries(errorData.details)
-                    .map(([field, message]) => `${field}: ${message}`)
-                    .join(', ');
-                } else {
-                  errorDetails = String(errorData.details);
-                }
-              }
-            } catch {
-              errorMessage = `${errorMessage}: ${errorText}`;
-            }
-          }
-        } catch {
-          // Se não conseguir ler o erro, usar status padrão
-        }
-        
-        // Incluir detalhes de validação se disponíveis
-        if (errorDetails) {
-          errorMessage = `${errorMessage} - ${errorDetails}`;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-    // Verificar se a resposta tem conteúdo
-    const text = await response.text();
+    const response = await fetch(url, config);
     
-    if (!text) {
-      // Resposta vazia - considerar como sucesso para DELETE
-      if (options.method === 'DELETE') {
-        return { success: true, data: { message: 'Item removido com sucesso' } } as T;
-      }
-      throw new Error('Resposta vazia da API');
-    }
-    
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (parseError) {
-      console.error('Erro ao fazer parse da resposta:', text);
-      throw new Error('Resposta inválida da API');
-    }
-    
-    // Verificar se a resposta segue o padrão esperado
-    if (data.success === false) {
-      throw new Error(data.message || 'Erro na API');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        success: false,
+        message: `HTTP ${response.status}: ${response.statusText}`
+      }));
+      
+      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('API Request Error:', error);
     throw error;
   }
 }
 
-// Função para fazer requisições GET
+// Funções específicas para cada método HTTP
 export async function apiGet<T>(
   endpoint: string, 
   params?: Record<string, string | number | boolean>
 ): Promise<T> {
-  const url = buildApiUrl(endpoint, params);
-  return apiRequest<T>(url);
+  const searchParams = new URLSearchParams();
+  
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+  }
+  
+  const queryString = searchParams.toString();
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+  
+  return apiRequest<T>(url, {
+    method: 'GET',
+  });
 }
 
-// Função para fazer requisições POST
 export async function apiPost<T>(
   endpoint: string, 
-  data: Record<string, unknown>
+  data: any
 ): Promise<T> {
-  const url = buildApiUrl(endpoint);
-  return apiRequest<T>(url, {
+  return apiRequest<T>(endpoint, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: data instanceof FormData ? data : JSON.stringify(data),
   });
 }
 
-// Função para fazer requisições PUT
 export async function apiPut<T>(
   endpoint: string, 
-  data: Record<string, unknown>
+  data: any
 ): Promise<T> {
-  const url = buildApiUrl(endpoint);
-  return apiRequest<T>(url, {
+  return apiRequest<T>(endpoint, {
     method: 'PUT',
-    body: JSON.stringify(data),
+    body: data instanceof FormData ? data : JSON.stringify(data),
   });
 }
 
-// Função para fazer requisições DELETE
 export async function apiDelete<T>(
   endpoint: string
 ): Promise<T> {
-  const url = buildApiUrl(endpoint);
-  return apiRequest<T>(url, {
+  return apiRequest<T>(endpoint, {
     method: 'DELETE',
+  });
+}
+
+export async function apiPatch<T>(
+  endpoint: string, 
+  data: any
+): Promise<T> {
+  return apiRequest<T>(endpoint, {
+    method: 'PATCH',
+    body: data instanceof FormData ? data : JSON.stringify(data),
   });
 }

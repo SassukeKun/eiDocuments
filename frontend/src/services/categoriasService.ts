@@ -5,12 +5,14 @@ import {
   apiPost, 
   apiPut, 
   apiDelete 
-} from '../api';
+} from '@/lib/api';
 import { 
   CategoriaDocumento, 
   ApiResponse, 
   ApiPaginatedResponse, 
-  CategoriaQueryParams 
+  CategoriaQueryParams,
+  CreateCategoriaDocumento,
+  UpdateCategoriaDocumento
 } from '@/types';
 
 export class CategoriasService {
@@ -25,12 +27,12 @@ export class CategoriasService {
   }
 
   // Criar nova categoria
-  static async criar(categoria: Omit<CategoriaDocumento, '_id' | 'dataCriacao' | 'dataAtualizacao'>): Promise<ApiResponse<CategoriaDocumento>> {
+  static async criar(categoria: CreateCategoriaDocumento): Promise<ApiResponse<CategoriaDocumento>> {
     return apiPost<ApiResponse<CategoriaDocumento>>('/categorias', categoria);
   }
 
   // Atualizar categoria existente
-  static async atualizar(id: string, categoria: Partial<Omit<CategoriaDocumento, '_id' | 'dataCriacao' | 'dataAtualizacao'>>): Promise<ApiResponse<CategoriaDocumento>> {
+  static async atualizar(id: string, categoria: UpdateCategoriaDocumento): Promise<ApiResponse<CategoriaDocumento>> {
     return apiPut<ApiResponse<CategoriaDocumento>>(`/categorias/${id}`, categoria);
   }
 

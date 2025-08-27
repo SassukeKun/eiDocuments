@@ -5,7 +5,7 @@ import {
   apiPost,
   apiPut,
   apiDelete
-} from '../api';
+} from '@/lib/api';
 import {
   TipoDocumento,
   ApiResponse,
@@ -80,41 +80,15 @@ export class TiposService {
   }
 
   // Obter tipos para select/dropdown
-  static async obterParaSelect(): Promise<{ value: string; label: string; extensao?: string }[]> {
+  static async obterParaSelect(): Promise<{ value: string; label: string }[]> {
     try {
       const response = await this.listarAtivos();
       return response.data.map(tipo => ({
         value: tipo._id,
-        label: tipo.nome,
-        extensao: tipo.extensao
+        label: tipo.nome
       }));
     } catch (error) {
       console.error('Erro ao obter tipos para select:', error);
-      return [];
-    }
-  }
-
-  // Buscar tipos por extensão
-  static async buscarPorExtensao(extensao: string, ativo?: boolean): Promise<ApiPaginatedResponse<TipoDocumento>> {
-    const params: TipoQueryParams = {
-      extensao,
-      ativo,
-      limit: 100
-    };
-    return this.listar(params);
-  }
-
-  // Listar extensões únicas
-  static async listarExtensoes(): Promise<string[]> {
-    try {
-      const response = await this.listar({ limit: 100 });
-      const extensoes = response.data
-        .map(tipo => tipo.extensao)
-        .filter((extensao): extensao is string => extensao !== undefined && extensao !== null);
-      
-      return [...new Set(extensoes)].sort();
-    } catch (error) {
-      console.error('Erro ao listar extensões:', error);
       return [];
     }
   }

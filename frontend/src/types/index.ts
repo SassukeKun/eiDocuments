@@ -1,4 +1,4 @@
-// Tipos baseados no FRONTEND_REQUIREMENTS.md
+// Tipos baseados nos models do backend
 
 export interface Departamento {
   _id: string;
@@ -15,7 +15,7 @@ export interface CategoriaDocumento {
   nome: string;
   codigo: string;
   descricao?: string;
-  departamento: string; // ID do departamento
+  departamento: string | Departamento; // ID ou objeto populado
   cor?: string;         // Código hexadecimal (#RRGGBB)
   icone?: string;       // Nome do ícone
   ativo: boolean;
@@ -33,14 +33,25 @@ export interface TipoDocumento {
   dataAtualizacao: string;
 }
 
+export interface Usuario {
+  _id: string;
+  auth0Id: string;
+  nome?: string;
+  email?: string;
+  roles: string[];
+  ativo: boolean;
+  dataCriacao: string;
+  dataAtualizacao: string;
+}
+
 export interface Documento {
   _id: string;
   titulo: string;
   descricao?: string;
-  categoria: string;     // ID da categoria
-  tipo: string;          // ID do tipo
-  departamento: string;  // ID do departamento
-  usuario: string;       // ID do usuário
+  categoria: string | CategoriaDocumento;     // ID ou objeto populado
+  tipo: string | TipoDocumento;              // ID ou objeto populado
+  departamento: string | Departamento;       // ID ou objeto populado
+  usuario: string | Usuario;                 // ID ou objeto populado
   tipoMovimento: 'enviado' | 'recebido' | 'interno';
   remetente?: string;    // Para documentos recebidos
   destinatario?: string; // Para documentos enviados
@@ -61,11 +72,11 @@ export interface Documento {
   dataAtualizacao: string;
 }
 
-// Tipos para as respostas da API
+// Tipos para as respostas da API (baseado em http.ts)
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
-  meta?: Record<string, unknown>;
+  meta?: Record<string, any>;
 }
 
 export interface ApiPaginatedResponse<T> {
@@ -74,37 +85,102 @@ export interface ApiPaginatedResponse<T> {
   page: number;
   limit: number;
   total: number;
+  meta?: Record<string, any>;
 }
 
 export interface ApiErrorResponse {
   success: false;
   message: string;
-  details?: Record<string, unknown>;
+  details?: any;
 }
 
-// Tipos para filtros e queries
+// Tipos para filtros e queries (baseado em buildQuery.ts)
 export interface BaseQueryParams {
   page?: number;
   limit?: number;
-}
-
-export interface DepartamentoQueryParams extends BaseQueryParams {
   q?: string;
   ativo?: boolean;
 }
+
+export interface DepartamentoQueryParams extends BaseQueryParams {}
 
 export interface CategoriaQueryParams extends BaseQueryParams {
-  q?: string;
-  ativo?: boolean;
   departamento?: string;
 }
 
+export interface TipoQueryParams extends BaseQueryParams {}
+
 export interface DocumentoQueryParams extends BaseQueryParams {
-  q?: string;
-  ativo?: boolean;
   departamento?: string;
   categoria?: string;
   tipo?: string;
-  tipoMovimento?: string;
-  status?: string;
+  tipoMovimento?: 'enviado' | 'recebido' | 'interno';
+  status?: 'ativo' | 'arquivado';
 }
+
+export interface UsuarioQueryParams extends BaseQueryParams {
+  roles?: string[];
+}
+
+// Tipos para criação/edição (omitindo campos automáticos)
+export interface CreateDepartamento {
+  nome: string;
+  codigo: string;
+  descricao?: string;
+  ativo?: boolean;
+}
+
+export interface UpdateDepartamento extends Partial<CreateDepartamento> {}
+
+export interface CreateCategoriaDocumento {
+  nome: string;
+  codigo: string;
+  descricao?: string;
+  departamento: string;
+  cor?: string;
+  icone?: string;
+  ativo?: boolean;
+}
+
+export interface UpdateCategoriaDocumento extends Partial<CreateCategoriaDocumento> {}
+
+export interface CreateTipoDocumento {
+  nome: string;
+  codigo: string;
+  descricao?: string;
+  ativo?: boolean;
+}
+
+export interface UpdateTipoDocumento extends Partial<CreateTipoDocumento> {}
+
+export interface CreateDocumento {
+  titulo: string;
+  descricao?: string;
+  categoria: string;
+  tipo: string;
+  departamento: string;
+  tipoMovimento: 'enviado' | 'recebido' | 'interno';
+  remetente?: string;
+  destinatario?: string;
+  dataEnvio?: string;
+  dataRecebimento?: string;
+  tags?: string[];
+  status?: 'ativo' | 'arquivado';
+  ativo?: boolean;
+}
+
+export interface UpdateDocumento extends Partial<CreateDocumento> {}
+
+export interface CreateUsuario {
+  auth0Id: string;
+  nome?: string;
+  email?: string;
+  roles?: string[];
+  ativo?: boolean;
+}
+
+export interface UpdateUsuario extends Partial<Omit<CreateUsuario, 'auth0Id'>> {}
+
+// Tipos específicos para services
+export interface UsuarioCreateData extends CreateUsuario {}
+export interface UsuarioUpdateData extends UpdateUsuario {}

@@ -12,12 +12,17 @@ import {
   Grid,
   List,
   SortAsc,
-  SortDesc
+  SortDesc,
+  Building2,
+  Users,
+  FolderOpen
 } from "lucide-react";
 import ModernButton from "@/components/ui/ModernButton";
 import ModernInput from "@/components/ui/ModernInput";
+import ManageLayout from "@/components/ui/ManageLayout";
 import { useNotification } from "@/hooks/useNotification";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface Document {
   id: string;
@@ -220,318 +225,129 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <FileText className="h-6 w-6 text-white" />
+    <ManageLayout>
+      <div>
+        {/* Cards de Estatísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <FileText className="w-6 h-6 text-blue-600" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">eiDocuments</h1>
-                <p className="text-sm text-gray-600">Gestão de Documentos Corporativos</p>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total de Documentos</p>
+                <p className="text-2xl font-bold text-gray-900">1,247</p>
               </div>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <ModernButton
-                variant="primary"
-                onClick={() => router.push('/upload')}
-                className="flex items-center space-x-2"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Novo Documento</span>
+          </div>
+
+          <Link href="/manage/departamentos">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Building2 className="w-6 h-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Departamentos</p>
+                  <p className="text-2xl font-bold text-gray-900">{departments.length}</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/manage/categorias">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <FolderOpen className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Categorias</p>
+                  <p className="text-2xl font-bold text-gray-900">24</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/manage/usuarios">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <Users className="w-6 h-6 text-orange-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Usuários</p>
+                  <p className="text-2xl font-bold text-gray-900">89</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Departamentos Grid */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Departamentos</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {departments.map(dept => (
+              <Link key={dept.id} href={`/manage/departamentos?filter=${dept.id}`}>
+                <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`w-10 h-10 ${dept.color} rounded-lg flex items-center justify-center`}>
+                      <Folder className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-xl font-bold text-gray-900">{dept.documentCount}</span>
+                  </div>
+                  <h3 className="font-medium text-gray-900 mb-1">{dept.name}</h3>
+                  <p className="text-sm text-gray-600">documentos</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Documentos Recentes */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Documentos Recentes</h2>
+            <Link href="/manage/documentos">
+              <ModernButton variant="outline" className="text-sm">
+                Ver Todos
               </ModernButton>
-            </div>
+            </Link>
           </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filtros e Busca */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-            <div className="lg:col-span-2">
-              <ModernInput
-                placeholder="Buscar documentos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                icon={<Search className="h-5 w-5 text-gray-400" />}
-              />
-            </div>
-            
-            <select
-              value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">Todos os Departamentos</option>
-              {departments.map(dept => (
-                <option key={dept.id} value={dept.id}>
-                  {dept.name} ({dept.documentCount})
-                </option>
-              ))}
-            </select>
-            
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">Todos os Tipos</option>
-              {documentTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              >
-                <option value="all">Todos os Status</option>
-                <option value="active">Ativo</option>
-                <option value="archived">Arquivado</option>
-                <option value="pending">Pendente</option>
-              </select>
-              
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleSort('date')}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    sortBy === 'date' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <span>Data</span>
-                  {sortBy === 'date' && (
-                    sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => handleSort('name')}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    sortBy === 'name' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <span>Nome</span>
-                  {sortBy === 'name' && (
-                    sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => handleSort('size')}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    sortBy === 'size' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <span>Tamanho</span>
-                  {sortBy === 'size' && (
-                    sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'grid' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Grid className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'list' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <List className="h-5 w-5" />
-              </button>
-            </div>
-                    </div>
-        </div>
-
-        {/* Estatísticas dos Departamentos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {departments.map(dept => (
-            <div
-              key={dept.id}
-              className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setSelectedDepartment(dept.id)}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 ${dept.color} rounded-lg flex items-center justify-center`}>
-                  <Folder className="h-6 w-6 text-white" />
+          <div className="space-y-4">
+            {documents.slice(0, 5).map(doc => (
+              <div key={doc.id} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-blue-600" />
                 </div>
-                <span className="text-2xl font-bold text-gray-900">{dept.documentCount}</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">{dept.name}</h3>
-              <p className="text-sm text-gray-600">documentos</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Lista de Documentos */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Documentos ({filteredDocuments.length})
-            </h2>
-          </div>
-
-          {viewMode === 'grid' ? (
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredDocuments.map(doc => (
-                <div key={doc.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleViewDocument(doc)}
-                        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDownloadDocument(doc)}
-                        className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{doc.title}</h3>
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Folder className="h-4 w-4 mr-2" />
-                      {doc.department}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                      {doc.type} • {doc.size}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>Por {doc.uploadedBy}</span>
-                    <span>{new Date(doc.uploadDate).toLocaleDateString('pt-BR')}</span>
-                  </div>
-                  
-                  <div className="mt-3">
-                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
-                      {getStatusText(doc.status)}
-                    </span>
-                  </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{doc.title}</p>
+                  <p className="text-sm text-gray-500">{doc.department} • {doc.type}</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Documento
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Departamento
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tamanho
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Upload
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredDocuments.map(doc => (
-                    <tr key={doc.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                            <FileText className="h-4 w-4 text-blue-600" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{doc.title}</div>
-                            <div className="text-sm text-gray-500">Por {doc.uploadedBy}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {doc.department}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {doc.type}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {doc.size}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(doc.uploadDate).toLocaleDateString('pt-BR')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
-                          {getStatusText(doc.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleViewDocument(doc)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDownloadDocument(doc)}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            <Download className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {filteredDocuments.length === 0 && (
-            <div className="text-center py-12">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum documento encontrado</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Tente ajustar os filtros ou adicionar novos documentos.
-              </p>
-            </div>
-          )}
+                <div className="text-sm text-gray-400">
+                  {new Date(doc.uploadDate).toLocaleDateString('pt-BR')}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleViewDocument(doc)}
+                    className="p-1 text-gray-600 hover:text-blue-600 transition-colors"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDownloadDocument(doc)}
+                    className="p-1 text-gray-600 hover:text-green-600 transition-colors"
+                  >
+                    <Download className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </ManageLayout>
   );
 };
 

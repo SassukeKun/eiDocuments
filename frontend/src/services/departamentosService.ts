@@ -5,12 +5,14 @@ import {
   apiPost, 
   apiPut, 
   apiDelete 
-} from '../api';
+} from '@/lib/api';
 import { 
   Departamento, 
   ApiResponse, 
   ApiPaginatedResponse, 
-  DepartamentoQueryParams 
+  DepartamentoQueryParams,
+  CreateDepartamento,
+  UpdateDepartamento
 } from '@/types';
 
 export class DepartamentosService {
@@ -25,12 +27,12 @@ export class DepartamentosService {
   }
 
   // Criar novo departamento
-  static async criar(departamento: Omit<Departamento, '_id' | 'dataCriacao' | 'dataAtualizacao'>): Promise<ApiResponse<Departamento>> {
+  static async criar(departamento: CreateDepartamento): Promise<ApiResponse<Departamento>> {
     return apiPost<ApiResponse<Departamento>>('/departamentos', departamento);
   }
 
   // Atualizar departamento existente
-  static async atualizar(id: string, departamento: Partial<Omit<Departamento, '_id' | 'dataCriacao' | 'dataAtualizacao'>>): Promise<ApiResponse<Departamento>> {
+  static async atualizar(id: string, departamento: UpdateDepartamento): Promise<ApiResponse<Departamento>> {
     return apiPut<ApiResponse<Departamento>>(`/departamentos/${id}`, departamento);
   }
 

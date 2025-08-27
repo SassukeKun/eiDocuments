@@ -1,0 +1,213 @@
+import { useState, useCallback } from 'react';
+import { DocumentosService, DocumentoQueryParams, DocumentoCreateData, DocumentoUpdateData } from '@/services/documentosService';
+import { Documento } from '@/types';
+import { useNotification } from './useNotification';
+
+export const useDocumentos = () => {
+  const [documentos, setDocumentos] = useState<Documento[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { success, error: showError } = useNotification();
+
+  // Carregar lista de documentos
+  const carregar = useCallback(async (params?: DocumentoQueryParams) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.listar(params);
+      setDocumentos(response.data);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar documentos';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
+  // Buscar por ID
+  const buscarPorId = useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.buscarPorId(id);
+      return response.data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar documento';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
+  // Criar novo documento (com upload)
+  const criar = useCallback(async (data: DocumentoCreateData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.criar(data);
+      success('Documento criado com sucesso');
+      return response.data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao criar documento';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [success, showError]);
+
+  // Atualizar documento
+  const atualizar = useCallback(async (id: string, data: DocumentoUpdateData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.atualizar(id, data);
+      success('Documento atualizado com sucesso');
+      return response.data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar documento';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [success, showError]);
+
+  // Remover documento
+  const remover = useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await DocumentosService.remover(id);
+      success('Documento removido com sucesso');
+      // Atualizar lista local
+      setDocumentos(prev => prev.filter(doc => doc._id !== id));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao remover documento';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [success, showError]);
+
+  // Buscar por texto
+  const buscarPorTexto = useCallback(async (texto: string, filtros?: Omit<DocumentoQueryParams, 'q'>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.buscarPorTexto(texto, filtros);
+      setDocumentos(response.data);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar documentos';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
+  // Download de documento
+  const baixar = useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.baixar(id);
+      success('Download iniciado');
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao baixar documento';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [success, showError]);
+
+  // Atualizar status
+  const atualizarStatus = useCallback(async (id: string, status: 'ativo' | 'arquivado') => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.atualizarStatus(id, status);
+      success(`Documento ${status === 'ativo' ? 'ativado' : 'arquivado'} com sucesso`);
+      
+      // Atualizar lista local
+      setDocumentos(prev => prev.map(doc => 
+        doc._id === id ? { ...doc, status } : doc
+      ));
+      
+      return response.data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar status';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [success, showError]);
+
+  // Buscar por filtros avançados
+  const buscarComFiltros = useCallback(async (filtros: DocumentoQueryParams) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.listar(filtros);
+      setDocumentos(response.data);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar documentos';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
+  // Estatísticas dos documentos
+  const obterEstatisticas = useCallback(async () => {
+    try {
+      return await DocumentosService.obterEstatisticas();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao obter estatísticas';
+      showError(errorMessage);
+      return {
+        total: 0,
+        ativos: 0,
+        arquivados: 0,
+        porDepartamento: {},
+        porTipo: {},
+        porCategoria: {}
+      };
+    }
+  }, [showError]);
+
+  return {
+    documentos,
+    loading,
+    error,
+    carregar,
+    buscarPorId,
+    criar,
+    atualizar,
+    remover,
+    buscarPorTexto,
+    baixar,
+    atualizarStatus,
+    buscarComFiltros,
+    obterEstatisticas,
+  };
+};
