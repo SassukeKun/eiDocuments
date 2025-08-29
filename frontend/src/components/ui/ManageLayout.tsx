@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import Sidebar from '@/components/ui/Sidebar';
+import AdminSidebar from '@/components/ui/AdminSidebar';
 
 interface ManageLayoutProps {
   children: React.ReactNode;
@@ -10,8 +10,9 @@ interface ManageLayoutProps {
 const ManageLayout: React.FC<ManageLayoutProps> = ({ children }) => {
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar />
+      <AdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header opcional pode ser adicionado aqui */}
         <main className="flex-1 overflow-auto">
           <div className="p-6">
             {children}

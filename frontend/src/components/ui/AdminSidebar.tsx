@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -12,59 +12,22 @@ import {
   Home,
   Menu,
   X,
-  ChevronRight,
   LogOut,
   Settings,
   Users,
-  Search,
-  Upload,
-  BookOpen
+  BarChart3
 } from 'lucide-react';
 
-interface SidebarProps {
+interface AdminSidebarProps {
   className?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  // Área do Usuário
-  const userMenuItems = [
-    {
-      title: 'Dashboard',
-      icon: Home,
-      href: '/dashboard/user',
-      description: 'Visão geral do departamento'
-    },
-    {
-      title: 'Documentos do Departamento',
-      icon: Building2,
-      href: '/user/documentos',
-      description: 'Ver documentos do seu departamento'
-    },
-    {
-      title: 'Meus Documentos',
-      icon: FolderOpen,
-      href: '/user/meus-documentos',
-      description: 'Documentos que você criou'
-    },
-    {
-      title: 'Buscar Documentos',
-      icon: Search,
-      href: '/user/buscar',
-      description: 'Pesquisar em todos os documentos'
-    },
-    {
-      title: 'Upload de Documento',
-      icon: Upload,
-      href: '/upload',
-      description: 'Enviar novo documento'
-    }
-  ];
-
-  // Área de Administração
+  // Apenas itens administrativos
   const adminMenuItems = [
     {
       title: 'Dashboard Admin',
@@ -79,6 +42,12 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
       description: 'Gerenciar todos os documentos'
     },
     {
+      title: 'Gerenciar Usuários',
+      icon: Users,
+      href: '/manage/usuarios',
+      description: 'Gerenciar usuários do sistema'
+    },
+    {
       title: 'Departamentos',
       icon: Building2,
       href: '/manage/departamentos',
@@ -91,25 +60,21 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
       description: 'Gerenciar categorias'
     },
     {
-      title: 'Tipos',
+      title: 'Tipos de Documento',
       icon: FileType,
       href: '/manage/tipos',
       description: 'Gerenciar tipos de documento'
     },
     {
-      title: 'Usuários',
-      icon: Users,
-      href: '/manage/usuarios',
-      description: 'Gerenciar usuários'
+      title: 'Relatórios',
+      icon: BarChart3,
+      href: '/manage/relatorios',
+      description: 'Relatórios do sistema'
     }
   ];
 
-  // Determinar baseado no role do usuário autenticado
-  const isAdmin = user?.roles.includes('admin') || user?.roles.includes('editor') || false;
-  const menuItems = isAdmin ? [...userMenuItems, ...adminMenuItems] : userMenuItems;
-
   const isActive = (href: string) => {
-    if (href === '/dashboard') {
+    if (href === '/dashboard/admin') {
       return pathname === href;
     }
     return pathname.startsWith(href);
@@ -127,10 +92,10 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         {!isCollapsed && (
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+              <Settings className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-800">eiDocs</span>
+            <span className="text-xl font-bold text-gray-800">Admin Panel</span>
           </div>
         )}
         <button
@@ -143,7 +108,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
       {/* Menu Items */}
       <nav className="flex-1 p-4 space-y-2">
-        {menuItems.map((item) => {
+        {adminMenuItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
           
@@ -152,26 +117,20 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
               key={item.href}
               href={item.href}
               className={`
-                flex items-center space-x-3 p-3 rounded-lg
-                transition-all duration-200 group
+                flex items-center space-x-3 p-3 rounded-lg transition-colors
                 ${active 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200' 
+                  ? 'bg-red-100 text-red-700 border border-red-200' 
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }
               `}
             >
-              <Icon className={`
-                w-5 h-5 
-                ${active ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}
-              `} />
-              
+              <Icon className="w-5 h-5" />
               {!isCollapsed && (
                 <>
                   <div className="flex-1">
                     <div className="font-medium">{item.title}</div>
                     <div className="text-xs text-gray-400">{item.description}</div>
                   </div>
-                  {active && <ChevronRight className="w-4 h-4 text-blue-600" />}
                 </>
               )}
             </Link>
@@ -183,18 +142,18 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
       <div className="p-4 border-t border-gray-200 space-y-2">
         {/* User Info */}
         {!isCollapsed && user && (
-          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg mb-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+          <div className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg mb-2">
+            <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
               <span className="text-xs font-medium text-white">
-                {user.nome?.charAt(0) || user.username?.charAt(0) || 'U'}
+                {user.nome?.charAt(0) || user.username?.charAt(0) || 'A'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-gray-900 truncate">
                 {user.nome || user.username}
               </div>
-              <div className="text-xs text-gray-500 truncate">
-                {user.departamento?.nome || 'Sem departamento'}
+              <div className="text-xs text-red-500 font-medium">
+                Administrador
               </div>
             </div>
           </div>
@@ -220,4 +179,4 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   );
 };
 
-export default Sidebar;
+export default AdminSidebar;

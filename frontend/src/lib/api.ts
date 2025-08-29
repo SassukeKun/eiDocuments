@@ -34,6 +34,7 @@ async function apiRequest<T>(
   const url = `${API_BASE_URL}${endpoint}`;
   
   const config: RequestInit = {
+    credentials: 'include', // Incluir cookies em todas as requisições
     ...options,
     headers: {
       'Content-Type': 'application/json',
