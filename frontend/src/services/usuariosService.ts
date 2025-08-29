@@ -17,8 +17,8 @@ import {
 
 export class UsuariosService {
   // Listar todos os usuários (com paginação e filtros)
-  static async listar(params?: UsuarioQueryParams): Promise<ApiPaginatedResponse<Usuario>> {
-    return apiGet<ApiPaginatedResponse<Usuario>>('/usuarios', params as Record<string, string | number | boolean>);
+  static async listar(params?: UsuarioQueryParams): Promise<any> {
+    return apiGet<any>('/usuarios', params as Record<string, string | number | boolean>);
   }
 
   // Buscar usuário por ID
@@ -42,7 +42,7 @@ export class UsuariosService {
   }
 
   // Buscar usuários por texto (busca em nome, apelido e username)
-  static async buscarPorTexto(texto: string, filtros?: Partial<UsuarioQueryParams>): Promise<ApiPaginatedResponse<Usuario>> {
+  static async buscarPorTexto(texto: string, filtros?: Partial<UsuarioQueryParams>): Promise<any> {
     const params: UsuarioQueryParams = {
       q: texto,
       limit: 100,
@@ -52,7 +52,7 @@ export class UsuariosService {
   }
 
   // Buscar usuários por departamento
-  static async buscarPorDepartamento(departamentoId: string, params?: UsuarioQueryParams): Promise<ApiPaginatedResponse<Usuario>> {
+  static async buscarPorDepartamento(departamentoId: string, params?: UsuarioQueryParams): Promise<any> {
     return this.listar({
       ...params,
       departamento: departamentoId
@@ -60,10 +60,10 @@ export class UsuariosService {
   }
 
   // Buscar usuários por role
-  static async buscarPorRole(role: string, params?: UsuarioQueryParams): Promise<ApiPaginatedResponse<Usuario>> {
+  static async buscarPorRole(role: string, params?: UsuarioQueryParams): Promise<any> {
     return this.listar({
       ...params,
-      roles: [role]
+      role: role
     });
   }
 

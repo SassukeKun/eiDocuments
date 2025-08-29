@@ -8,13 +8,13 @@ import {
   UsuarioUpdateData, 
   UsuarioQueryParams 
 } from '@/types';
-import { useNotification } from './useNotification';
+import { useToastContext } from '@/contexts/ToastContext';
 
 export const useUsuarios = () => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { success, error: showError } = useNotification();
+  const { success, error: showError } = useToastContext();
 
   // Carregar lista de usuários
   const carregar = useCallback(async (params?: UsuarioQueryParams) => {
@@ -205,10 +205,10 @@ export const useUsuarios = () => {
   const verificarUsername = useCallback(async (username: string, userId?: string) => {
     try {
       const response = await UsuariosService.buscarPorTexto(username);
-      return response.data.some(usuario => 
+      return response.data.some((usuario: Usuario) => 
         usuario.username === username && usuario._id !== userId
       );
-    } catch (err) {
+    } catch {
       return false;
     }
   }, []);

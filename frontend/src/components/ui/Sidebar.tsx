@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     {
       title: 'Usuários',
       icon: Users,
-      href: '/features/usuarios',
+      href: '/manage/usuarios',
       description: 'Gerenciar usuários'
     }
   ];
