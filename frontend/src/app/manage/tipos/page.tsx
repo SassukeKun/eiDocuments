@@ -6,6 +6,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import FormModal from '@/components/ui/FormModal';
 import TipoForm from '@/components/forms/TipoForm';
+import TipoDetail from '@/components/details/TipoDetail';
 import { Edit, Trash2, Eye, File } from 'lucide-react';
 import { TipoDocumento } from '@/types';
 import { useTipos } from '@/hooks/useTipos';
@@ -13,6 +14,7 @@ import { usePaginatedData } from '@/hooks/usePaginatedData';
 
 const TiposPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedTipo, setSelectedTipo] = useState<TipoDocumento | null>(null);
   
   const {
@@ -67,6 +69,11 @@ const TiposPage = () => {
     setIsFormOpen(true);
   };
 
+  const handleView = (tipo: TipoDocumento) => {
+    setSelectedTipo(tipo);
+    setIsDetailOpen(true);
+  };
+
   const handleFormSuccess = () => {
     refetch(); // Recarregar lista após sucesso
     setIsFormOpen(false); // Fechar modal
@@ -75,6 +82,11 @@ const TiposPage = () => {
 
   const handleFormClose = () => {
     setIsFormOpen(false);
+    setSelectedTipo(null);
+  };
+
+  const handleDetailClose = () => {
+    setIsDetailOpen(false);
     setSelectedTipo(null);
   };
 
@@ -143,9 +155,7 @@ const TiposPage = () => {
       key: 'view',
       label: 'Visualizar',
       icon: <Eye className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Visualizar tipo:', record);
-      },
+      onClick: handleView,
     },
     {
       key: 'edit',
@@ -189,7 +199,7 @@ const TiposPage = () => {
         {/* Formulário Modal */}
         <FormModal
           isOpen={isFormOpen}
-          onClose={() => setIsFormOpen(false)}
+          onClose={handleFormClose}
           title={selectedTipo ? 'Editar Tipo' : 'Novo Tipo'}
         >
           <TipoForm
@@ -197,6 +207,13 @@ const TiposPage = () => {
             onSuccess={handleFormSuccess}
           />
         </FormModal>
+
+        {/* Modal de Detalhes */}
+        <TipoDetail
+          isOpen={isDetailOpen}
+          onClose={handleDetailClose}
+          tipo={selectedTipo}
+        />
       </div>
     </ManageLayout>
   );

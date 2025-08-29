@@ -21,8 +21,6 @@ import UserLayout from "@/components/ui/UserLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToastContext } from "@/contexts/ToastContext";
 import { useRouter } from "next/navigation";
-import { useDepartamentos } from "@/hooks/useDepartamentos";
-import { useEffect } from "react";
 
 interface UploadFile {
   id: string;
@@ -38,12 +36,13 @@ interface UploadFile {
 interface DocumentForm {
   titulo: string;
   descricao: string;
-  departamento: string;
   categoria: string;
   tipoMovimento: 'recebido' | 'enviado' | 'interno';
   remetente: string;
   destinatario: string;
   responsavel: string;
+  dataEnvio: string;
+  dataRecebimento: string;
   tags: string[];
   ativo: boolean;
 }
@@ -51,7 +50,9 @@ interface DocumentForm {
 const UploadPage = () => {
   const { success, error } = useToastContext();
   const router = useRouter();
-  const { departamentos, carregar: carregarDepartamentos } = useDepartamentos();
+  
+  // TODO: Obter departamento do usuário logado do contexto de autenticação
+  const userDepartment = "Recursos Humanos"; // Simular departamento do usuário
   
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [newTag, setNewTag] = useState("");
@@ -60,19 +61,18 @@ const UploadPage = () => {
   const [formData, setFormData] = useState<DocumentForm>({
     titulo: '',
     descricao: '',
-    departamento: '',
     categoria: '',
     tipoMovimento: 'interno',
     remetente: '',
     destinatario: '',
     responsavel: '',
+    dataEnvio: '',
+    dataRecebimento: '',
     tags: [],
     ativo: true
   });
 
-  useEffect(() => {
-    carregarDepartamentos();
-  }, [carregarDepartamentos]);
+  // Não é mais necessário carregar departamentos pois o usuário já tem um departamento fixo
 
   const allowedFileTypes = [
     'application/pdf',
@@ -203,7 +203,29 @@ const UploadPage = () => {
   };
 
   const handleInputChange = (field: keyof DocumentForm, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Lógica especial para mudança de tipo de movimento
+      if (field === 'tipoMovimento') {
+        // Limpar campos específicos do tipo anterior
+        newData.remetente = '';
+        newData.destinatario = '';
+        newData.responsavel = '';
+        newData.dataEnvio = '';
+        newData.dataRecebimento = '';
+        
+        // Auto-preencher data atual para tipos que requerem data
+        const today = new Date().toISOString().split('T')[0];
+        if (value === 'enviado') {
+          newData.dataEnvio = today;
+        } else if (value === 'recebido') {
+          newData.dataRecebimento = today;
+        }
+      }
+      
+      return newData;
+    });
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -235,9 +257,30 @@ const UploadPage = () => {
       return;
     }
 
-    if (!formData.departamento) {
-      error("Selecione um departamento");
-      return;
+    // Validações específicas por tipo de movimento
+    if (formData.tipoMovimento === 'enviado') {
+      if (!formData.destinatario?.trim()) {
+        error("Destinatário é obrigatório para documentos enviados");
+        return;
+      }
+      if (!formData.dataEnvio) {
+        error("Data de envio é obrigatória para documentos enviados");
+        return;
+      }
+    } else if (formData.tipoMovimento === 'recebido') {
+      if (!formData.remetente?.trim()) {
+        error("Remetente é obrigatório para documentos recebidos");
+        return;
+      }
+      if (!formData.dataRecebimento) {
+        error("Data de recebimento é obrigatória para documentos recebidos");
+        return;
+      }
+    } else if (formData.tipoMovimento === 'interno') {
+      if (!formData.responsavel?.trim()) {
+        error("Responsável é obrigatório para documentos internos");
+        return;
+      }
     }
 
     setIsUploading(true);
@@ -275,7 +318,22 @@ const UploadPage = () => {
     }
   };
 
-  const isFormValid = files.length > 0 && formData.titulo.trim() && formData.departamento && !isUploading;
+  const isFormValid = () => {
+    if (files.length === 0 || !formData.titulo.trim() || isUploading) {
+      return false;
+    }
+    
+    // Validações específicas por tipo de movimento
+    if (formData.tipoMovimento === 'enviado') {
+      return !!(formData.destinatario?.trim() && formData.dataEnvio);
+    } else if (formData.tipoMovimento === 'recebido') {
+      return !!(formData.remetente?.trim() && formData.dataRecebimento);
+    } else if (formData.tipoMovimento === 'interno') {
+      return !!(formData.responsavel?.trim());
+    }
+    
+    return true;
+  };
 
   return (
     <UserLayout>
@@ -416,24 +474,32 @@ const UploadPage = () => {
               />
             </div>
 
-            {/* Departamento */}
+            {/* Departamento (somente leitura) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Departamento *
+                Departamento
+              </label>
+              <div className="flex items-center px-3 py-2 bg-gray-50 border border-gray-300 rounded-md">
+                <Building2 className="w-4 h-4 text-gray-400 mr-2" />
+                <span className="text-gray-700">{userDepartment}</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Departamento do usuário logado</p>
+            </div>
+
+            {/* Categoria */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Categoria
               </label>
               <select
-                value={formData.departamento}
-                onChange={(e) => handleInputChange('departamento', e.target.value)}
+                value={formData.categoria}
+                onChange={(e) => handleInputChange('categoria', e.target.value)}
                 className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
               >
-                <option value="">Selecione um departamento</option>
-                {departamentos.map(dept => (
-                  <option key={dept._id} value={dept._id}>
-                    {dept.nome}
-                  </option>
-                ))}
+                <option value="">Selecione uma categoria</option>
+                {/* TODO: Carregar categorias do departamento do usuário */}
               </select>
+              <p className="text-xs text-gray-500 mt-1">Categorias disponíveis no seu departamento</p>
             </div>
 
             {/* Tipo de Movimento */}
@@ -453,48 +519,94 @@ const UploadPage = () => {
             </div>
 
             {/* Campos condicionais baseados no tipo de movimento */}
-            {formData.tipoMovimento === 'recebido' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Remetente
-                </label>
-                <input
-                  type="text"
-                  value={formData.remetente}
-                  onChange={(e) => handleInputChange('remetente', e.target.value)}
-                  className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Nome do remetente"
-                />
+            {formData.tipoMovimento === 'enviado' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Destinatário *
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={formData.destinatario}
+                      onChange={(e) => handleInputChange('destinatario', e.target.value)}
+                      className="block w-full pl-10 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nome do destinatário"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Data de Envio *
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="date"
+                      value={formData.dataEnvio}
+                      onChange={(e) => handleInputChange('dataEnvio', e.target.value)}
+                      className="block w-full pl-10 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
-            {formData.tipoMovimento === 'enviado' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Destinatário
-                </label>
-                <input
-                  type="text"
-                  value={formData.destinatario}
-                  onChange={(e) => handleInputChange('destinatario', e.target.value)}
-                  className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Nome do destinatário"
-                />
+            {formData.tipoMovimento === 'recebido' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Remetente *
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={formData.remetente}
+                      onChange={(e) => handleInputChange('remetente', e.target.value)}
+                      className="block w-full pl-10 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nome do remetente"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Data de Recebimento *
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="date"
+                      value={formData.dataRecebimento}
+                      onChange={(e) => handleInputChange('dataRecebimento', e.target.value)}
+                      className="block w-full pl-10 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
             {formData.tipoMovimento === 'interno' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Responsável
+                  Responsável *
                 </label>
-                <input
-                  type="text"
-                  value={formData.responsavel}
-                  onChange={(e) => handleInputChange('responsavel', e.target.value)}
-                  className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Nome do responsável"
-                />
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formData.responsavel}
+                    onChange={(e) => handleInputChange('responsavel', e.target.value)}
+                    className="block w-full pl-10 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Nome do responsável pelo documento"
+                    required
+                  />
+                </div>
               </div>
             )}
 
@@ -574,7 +686,7 @@ const UploadPage = () => {
 
           <button
             onClick={handleUpload}
-            disabled={!isFormValid}
+            disabled={!isFormValid()}
             className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isUploading ? (
@@ -592,15 +704,22 @@ const UploadPage = () => {
         </div>
 
         {/* Mensagem de validação */}
-        {!isFormValid && (files.length > 0 || formData.titulo || formData.departamento) && (
+        {!isFormValid() && (files.length > 0 || formData.titulo || formData.dataEnvio || formData.dataRecebimento || formData.remetente || formData.destinatario || formData.responsavel) && (
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
             <div className="flex items-center">
               <AlertCircle className="h-4 w-4 text-yellow-600 mr-2" />
-              <p className="text-sm text-yellow-800">
-                {files.length === 0 && "Selecione pelo menos um arquivo • "}
-                {!formData.titulo.trim() && "Digite um título • "}
-                {!formData.departamento && "Selecione um departamento"}
-              </p>
+              <div className="text-sm text-yellow-800">
+                <p className="font-medium mb-1">Campos obrigatórios pendentes:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  {files.length === 0 && <li>Selecione pelo menos um arquivo</li>}
+                  {!formData.titulo.trim() && <li>Digite um título para o documento</li>}
+                  {formData.tipoMovimento === 'enviado' && !formData.destinatario?.trim() && <li>Informe o destinatário</li>}
+                  {formData.tipoMovimento === 'enviado' && !formData.dataEnvio && <li>Selecione a data de envio</li>}
+                  {formData.tipoMovimento === 'recebido' && !formData.remetente?.trim() && <li>Informe o remetente</li>}
+                  {formData.tipoMovimento === 'recebido' && !formData.dataRecebimento && <li>Selecione a data de recebimento</li>}
+                  {formData.tipoMovimento === 'interno' && !formData.responsavel?.trim() && <li>Informe o responsável</li>}
+                </ul>
+              </div>
             </div>
           </div>
         )}

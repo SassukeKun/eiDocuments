@@ -6,6 +6,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import FormModal from '@/components/ui/FormModal';
 import DepartamentoForm from '@/components/forms/DepartamentoForm';
+import DepartamentoDetail from '@/components/details/DepartamentoDetail';
 import { Building2, Edit, Trash2, Eye } from 'lucide-react';
 import { Departamento } from '@/types';
 import { useDepartamentos } from '@/hooks/useDepartamentos';
@@ -13,6 +14,7 @@ import { usePaginatedData } from '@/hooks/usePaginatedData';
 
 const DepartamentosPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDepartamento, setSelectedDepartamento] = useState<Departamento | null>(null);
   
   const {
@@ -67,6 +69,11 @@ const DepartamentosPage = () => {
     setIsFormOpen(true);
   };
 
+  const handleView = (departamento: Departamento) => {
+    setSelectedDepartamento(departamento);
+    setIsDetailOpen(true);
+  };
+
   const handleFormSuccess = () => {
     refetch(); // Recarregar lista após sucesso
     setIsFormOpen(false); // Fechar modal
@@ -75,6 +82,11 @@ const DepartamentosPage = () => {
 
   const handleFormClose = () => {
     setIsFormOpen(false);
+    setSelectedDepartamento(null);
+  };
+
+  const handleDetailClose = () => {
+    setIsDetailOpen(false);
     setSelectedDepartamento(null);
   };
 
@@ -143,9 +155,7 @@ const DepartamentosPage = () => {
       key: 'view',
       label: 'Visualizar',
       icon: <Eye className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Visualizar departamento:', record);
-      },
+      onClick: handleView,
     },
     {
       key: 'edit',
@@ -189,7 +199,7 @@ const DepartamentosPage = () => {
         {/* Formulário Modal */}
         <FormModal
           isOpen={isFormOpen}
-          onClose={() => setIsFormOpen(false)}
+          onClose={handleFormClose}
           title={selectedDepartamento ? 'Editar Departamento' : 'Novo Departamento'}
         >
           <DepartamentoForm
@@ -197,6 +207,13 @@ const DepartamentosPage = () => {
             onSuccess={handleFormSuccess}
           />
         </FormModal>
+
+        {/* Modal de Detalhes */}
+        <DepartamentoDetail
+          isOpen={isDetailOpen}
+          onClose={handleDetailClose}
+          departamento={selectedDepartamento}
+        />
       </div>
     </ManageLayout>
   );

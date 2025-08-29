@@ -6,6 +6,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import FormModal from '@/components/ui/FormModal';
 import CategoriaForm from '@/components/forms/CategoriaForm';
+import CategoriaDetail from '@/components/details/CategoriaDetail';
 import { FolderOpen, Edit, Trash2, Eye } from 'lucide-react';
 import { CategoriaDocumento } from '@/types';
 import { useCategorias } from '@/hooks/useCategorias';
@@ -13,6 +14,7 @@ import { usePaginatedData } from '@/hooks/usePaginatedData';
 
 const CategoriasPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedCategoria, setSelectedCategoria] = useState<CategoriaDocumento | null>(null);
   
   const {
@@ -67,6 +69,11 @@ const CategoriasPage = () => {
     setIsFormOpen(true);
   };
 
+  const handleView = (categoria: CategoriaDocumento) => {
+    setSelectedCategoria(categoria);
+    setIsDetailOpen(true);
+  };
+
   const handleFormSuccess = () => {
     refetch(); // Recarregar lista após sucesso
     setIsFormOpen(false); // Fechar modal
@@ -75,6 +82,11 @@ const CategoriasPage = () => {
 
   const handleFormClose = () => {
     setIsFormOpen(false);
+    setSelectedCategoria(null);
+  };
+
+  const handleDetailClose = () => {
+    setIsDetailOpen(false);
     setSelectedCategoria(null);
   };
 
@@ -176,9 +188,7 @@ const CategoriasPage = () => {
       key: 'view',
       label: 'Visualizar',
       icon: <Eye className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Visualizar categoria:', record);
-      },
+      onClick: handleView,
     },
     {
       key: 'edit',
@@ -222,7 +232,7 @@ const CategoriasPage = () => {
         {/* Formulário Modal */}
         <FormModal
           isOpen={isFormOpen}
-          onClose={() => setIsFormOpen(false)}
+          onClose={handleFormClose}
           title={selectedCategoria ? 'Editar Categoria' : 'Nova Categoria'}
         >
           <CategoriaForm
@@ -230,6 +240,13 @@ const CategoriasPage = () => {
             onSuccess={handleFormSuccess}
           />
         </FormModal>
+
+        {/* Modal de Detalhes */}
+        <CategoriaDetail
+          isOpen={isDetailOpen}
+          onClose={handleDetailClose}
+          categoria={selectedCategoria}
+        />
       </div>
     </ManageLayout>
   );

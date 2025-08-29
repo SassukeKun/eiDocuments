@@ -27,7 +27,7 @@ interface DataTableProps<T = any> {
   columns: TableColumn<T>[];
   actions?: TableAction<T>[];
   loading?: boolean;
-  emptyMessage?: string;
+  emptyMessage?: string | React.ReactNode;
   onSort?: (column: string, direction: 'asc' | 'desc') => void;
   className?: string;
   // Propriedades de paginação
@@ -141,7 +141,11 @@ const DataTable = <T extends Record<string, any>>({
     return (
       <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
         <div className="p-8 text-center">
-          <p className="text-gray-500">{emptyMessage}</p>
+          {typeof emptyMessage === 'string' ? (
+            <p className="text-gray-500">{emptyMessage}</p>
+          ) : (
+            emptyMessage
+          )}
         </div>
       </div>
     );

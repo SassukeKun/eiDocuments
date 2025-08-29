@@ -5,6 +5,7 @@ import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import DocumentoForm from '@/components/forms/DocumentoForm';
+import DocumentoDetail from '@/components/details/DocumentoDetail';
 import { FileText, Edit, Trash2, Eye, Download, Building2, FolderOpen } from 'lucide-react';
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
@@ -12,6 +13,7 @@ import { useDocumentos } from '@/hooks/useDocumentos';
 const DocumentosPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDocumento, setSelectedDocumento] = useState<Documento | null>(null);
   
   const {
@@ -84,6 +86,25 @@ const DocumentosPage = () => {
 
   const handleFormClose = () => {
     setIsFormOpen(false);
+    setSelectedDocumento(null);
+  };
+
+  const handleView = async (documento: Documento) => {
+    try {
+      // Buscar documento completo com populate para visualização
+      const documentoCompleto = await buscarPorId(documento._id);
+      setSelectedDocumento(documentoCompleto);
+      setIsDetailOpen(true);
+    } catch (error) {
+      console.error('Erro ao buscar documento:', error);
+      // Fallback: usar dados da lista
+      setSelectedDocumento(documento);
+      setIsDetailOpen(true);
+    }
+  };
+
+  const handleDetailClose = () => {
+    setIsDetailOpen(false);
     setSelectedDocumento(null);
   };
 
@@ -247,9 +268,7 @@ const DocumentosPage = () => {
       key: 'view',
       label: 'Visualizar',
       icon: <Eye className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Visualizar documento:', record);
-      },
+      onClick: handleView,
     },
     {
       key: 'edit',
@@ -296,6 +315,14 @@ const DocumentosPage = () => {
           onClose={handleFormClose}
           onSuccess={handleFormSuccess}
           documento={selectedDocumento}
+        />
+
+        {/* Modal de Detalhes */}
+        <DocumentoDetail
+          isOpen={isDetailOpen}
+          onClose={handleDetailClose}
+          documento={selectedDocumento}
+          onDownload={handleDownload}
         />
       </div>
     </ManageLayout>

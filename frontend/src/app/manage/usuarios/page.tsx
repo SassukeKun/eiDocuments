@@ -6,6 +6,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import FormModal from '@/components/ui/FormModal';
 import UsuarioForm from '@/components/forms/UsuarioForm';
+import UsuarioDetail from '@/components/details/UsuarioDetail';
 import { Users, Edit, Trash2, Eye, Shield, User, Building2 } from 'lucide-react';
 import { Usuario } from '@/types';
 import { useUsuarios } from '@/hooks/useUsuarios';
@@ -13,6 +14,7 @@ import { usePaginatedData } from '@/hooks/usePaginatedData';
 
 const UsuariosPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null);
   
   const {
@@ -65,6 +67,11 @@ const UsuariosPage = () => {
     setIsFormOpen(true);
   };
 
+  const handleView = (usuario: Usuario) => {
+    setSelectedUsuario(usuario);
+    setIsDetailOpen(true);
+  };
+
   const handleFormSuccess = () => {
     refetch(); // Recarregar lista após sucesso
     setIsFormOpen(false); // Fechar modal
@@ -73,6 +80,11 @@ const UsuariosPage = () => {
 
   const handleFormClose = () => {
     setIsFormOpen(false);
+    setSelectedUsuario(null);
+  };
+
+  const handleDetailClose = () => {
+    setIsDetailOpen(false);
     setSelectedUsuario(null);
   };
 
@@ -186,9 +198,7 @@ const UsuariosPage = () => {
       key: 'view',
       label: 'Visualizar',
       icon: <Eye className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Visualizar usuário:', record);
-      },
+      onClick: handleView,
     },
     {
       key: 'edit',
@@ -248,6 +258,13 @@ const UsuariosPage = () => {
             onSuccess={handleFormSuccess}
           />
         </FormModal>
+
+        {/* Modal de Detalhes */}
+        <UsuarioDetail
+          isOpen={isDetailOpen}
+          onClose={handleDetailClose}
+          usuario={selectedUsuario}
+        />
       </div>
     </ManageLayout>
   );
