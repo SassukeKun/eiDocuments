@@ -67,6 +67,7 @@ export interface Documento {
     originalName: string;
     format: string;
     size: number;
+    resourceType?: 'image' | 'raw' | 'video' | 'auto';
   };
   status: 'ativo' | 'arquivado';
   tags: string[];

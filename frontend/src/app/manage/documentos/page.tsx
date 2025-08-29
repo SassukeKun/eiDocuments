@@ -19,6 +19,7 @@ const DocumentosPage = () => {
     loading,
     carregar,
     buscarPorTexto,
+    buscarPorId,
     remover,
     baixar
   } = useDocumentos();
@@ -63,9 +64,18 @@ const DocumentosPage = () => {
     setIsFormOpen(true);
   };
 
-  const handleEdit = (documento: Documento) => {
-    setSelectedDocumento(documento);
-    setIsFormOpen(true);
+  const handleEdit = async (documento: Documento) => {
+    try {
+      // Buscar documento completo com populate
+      const documentoCompleto = await buscarPorId(documento._id);
+      setSelectedDocumento(documentoCompleto);
+      setIsFormOpen(true);
+    } catch (error) {
+      console.error('Erro ao buscar documento:', error);
+      // Fallback: usar dados da lista
+      setSelectedDocumento(documento);
+      setIsFormOpen(true);
+    }
   };
 
   const handleFormSuccess = () => {
@@ -78,6 +88,7 @@ const DocumentosPage = () => {
   };
 
   const formatFileSize = (bytes: number) => {
+    if (!bytes || isNaN(bytes)) return '0 KB';
     const mb = bytes / (1024 * 1024);
     return mb < 1 ? `${(bytes / 1024).toFixed(1)} KB` : `${mb.toFixed(1)} MB`;
   };
@@ -98,7 +109,7 @@ const DocumentosPage = () => {
               <div className="text-sm text-gray-500 truncate">{record.descricao}</div>
             )}
             <div className="text-xs text-gray-400 mt-1">
-              {record.arquivo.nomeOriginal} • {formatFileSize(record.arquivo.tamanho)}
+              {record.arquivo.originalName} • {formatFileSize(record.arquivo.size)}
             </div>
           </div>
         </div>
