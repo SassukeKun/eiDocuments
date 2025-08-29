@@ -35,9 +35,11 @@ export interface TipoDocumento {
 
 export interface Usuario {
   _id: string;
-  auth0Id: string;
-  nome?: string;
-  email?: string;
+  nome: string;
+  apelido: string;
+  username: string;
+  senha?: string; // Only for creation/update, not returned in GET
+  departamento: string | Departamento; // ID ou objeto populado
   roles: string[];
   ativo: boolean;
   dataCriacao: string;
@@ -174,14 +176,18 @@ export interface CreateDocumento {
 export interface UpdateDocumento extends Partial<CreateDocumento> {}
 
 export interface CreateUsuario {
-  auth0Id: string;
-  nome?: string;
-  email?: string;
+  nome: string;
+  apelido: string;
+  username: string;
+  senha: string;
+  departamento: string;
   roles?: string[];
   ativo?: boolean;
 }
 
-export interface UpdateUsuario extends Partial<Omit<CreateUsuario, 'auth0Id'>> {}
+export interface UpdateUsuario extends Partial<Omit<CreateUsuario, 'senha'>> {
+  senha?: string; // Optional for updates
+}
 
 // Tipos específicos para services
 export interface UsuarioCreateData extends CreateUsuario {}

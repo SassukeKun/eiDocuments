@@ -1,11 +1,13 @@
 import { useState, useCallback } from 'react';
 import { 
-  UsuariosService, 
+  UsuariosService
+} from '@/services/usuariosService';
+import { 
   Usuario, 
   UsuarioCreateData, 
   UsuarioUpdateData, 
   UsuarioQueryParams 
-} from '@/services/usuariosService';
+} from '@/types';
 import { useNotification } from './useNotification';
 
 export const useUsuarios = () => {
@@ -159,6 +161,58 @@ export const useUsuarios = () => {
     }
   }, [showError]);
 
+  // Carregar com paginação (compatível com usePaginatedData)
+  const carregarPaginado = useCallback(async (
+    page: number, 
+    limit: number, 
+    search?: string, 
+    sort?: { column: string; direction: 'asc' | 'desc' }
+  ) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params: UsuarioQueryParams = {
+        page,
+        limit,
+        ...(search && { q: search }),
+        ...(sort && { 
+          sortBy: sort.column,
+          sortOrder: sort.direction 
+        })
+      };
+      
+      const response = await UsuariosService.listar(params);
+      
+      // O backend retorna: { success: true, data: [...], page, limit, total }
+      return {
+        data: response.data,
+        total: response.total || 0,
+        page: response.page || page,
+        totalPages: Math.ceil((response.total || 0) / limit)
+      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar usuários';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
+  // Verificar se username já existe
+  const verificarUsername = useCallback(async (username: string, userId?: string) => {
+    try {
+      const response = await UsuariosService.buscarPorTexto(username);
+      return response.data.some(usuario => 
+        usuario.username === username && usuario._id !== userId
+      );
+    } catch (err) {
+      return false;
+    }
+  }, []);
+
   // Obter usuários para select
   const obterParaSelect = useCallback(async () => {
     try {
@@ -175,6 +229,7 @@ export const useUsuarios = () => {
     loading,
     error,
     carregar,
+    carregarPaginado,
     buscarPorId,
     criar,
     atualizar,
@@ -182,6 +237,7 @@ export const useUsuarios = () => {
     buscarPorTexto,
     carregarAtivos,
     buscarPorRole,
+    verificarUsername,
     obterParaSelect,
   };
 };

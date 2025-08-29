@@ -8,49 +8,12 @@ import {
 } from '@/lib/api';
 import { 
   ApiResponse, 
-  ApiPaginatedResponse 
+  ApiPaginatedResponse,
+  Usuario,
+  UsuarioQueryParams,
+  CreateUsuario,
+  UpdateUsuario
 } from '@/types';
-
-export interface Usuario {
-  _id: string;
-  nome: string;
-  email: string;
-  departamento: string;
-  role: 'admin' | 'manager' | 'user';
-  ativo: boolean;
-  dataCriacao: string;
-  dataAtualizacao: string;
-  ultimoLogin?: string;
-}
-
-export interface UsuarioQueryParams {
-  q?: string;
-  departamento?: string;
-  role?: 'admin' | 'manager' | 'user';
-  ativo?: boolean;
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
-
-export interface UsuarioCreateData {
-  nome: string;
-  email: string;
-  senha: string;
-  departamento: string;
-  role: 'admin' | 'manager' | 'user';
-  ativo?: boolean;
-}
-
-export interface UsuarioUpdateData {
-  nome?: string;
-  email?: string;
-  departamento?: string;
-  role?: 'admin' | 'manager' | 'user';
-  ativo?: boolean;
-  senha?: string;
-}
 
 export class UsuariosService {
   // Listar todos os usuários (com paginação e filtros)
@@ -64,12 +27,12 @@ export class UsuariosService {
   }
 
   // Criar novo usuário
-  static async criar(usuario: UsuarioCreateData): Promise<ApiResponse<Usuario>> {
+  static async criar(usuario: CreateUsuario): Promise<ApiResponse<Usuario>> {
     return apiPost<ApiResponse<Usuario>>('/usuarios', usuario);
   }
 
   // Atualizar usuário existente
-  static async atualizar(id: string, usuario: UsuarioUpdateData): Promise<ApiResponse<Usuario>> {
+  static async atualizar(id: string, usuario: UpdateUsuario): Promise<ApiResponse<Usuario>> {
     return apiPut<ApiResponse<Usuario>>(`/usuarios/${id}`, usuario);
   }
 
@@ -78,7 +41,7 @@ export class UsuariosService {
     return apiDelete<ApiResponse<{ message: string }>>(`/usuarios/${id}`);
   }
 
-  // Buscar usuários por texto (busca em nome e email)
+  // Buscar usuários por texto (busca em nome, apelido e username)
   static async buscarPorTexto(texto: string, filtros?: Partial<UsuarioQueryParams>): Promise<ApiPaginatedResponse<Usuario>> {
     const params: UsuarioQueryParams = {
       q: texto,
@@ -97,29 +60,22 @@ export class UsuariosService {
   }
 
   // Buscar usuários por role
-  static async buscarPorRole(role: 'admin' | 'manager' | 'user', params?: UsuarioQueryParams): Promise<ApiPaginatedResponse<Usuario>> {
+  static async buscarPorRole(role: string, params?: UsuarioQueryParams): Promise<ApiPaginatedResponse<Usuario>> {
     return this.listar({
       ...params,
-      role
+      roles: [role]
     });
   }
 
-  // Alterar senha do usuário
-  static async alterarSenha(id: string, senhaAtual: string, novaSenha: string): Promise<ApiResponse<{ message: string }>> {
-    return apiPut<ApiResponse<{ message: string }>>(`/usuarios/${id}/senha`, {
-      senhaAtual,
-      novaSenha
-    });
-  }
-
-  // Obter perfil do usuário atual
-  static async obterPerfil(): Promise<ApiResponse<Usuario>> {
-    return apiGet<ApiResponse<Usuario>>('/usuarios/perfil');
-  }
-
-  // Atualizar perfil do usuário atual
-  static async atualizarPerfil(dados: Partial<UsuarioUpdateData>): Promise<ApiResponse<Usuario>> {
-    return apiPut<ApiResponse<Usuario>>('/usuarios/perfil', dados as Record<string, unknown>);
+  // Verificar se username já existe
+  static async verificarUsernameExistente(username: string): Promise<boolean> {
+    try {
+      const response = await this.buscarPorTexto(username);
+      return response.data.some(usuario => usuario.username === username);
+    } catch (error) {
+      console.error('Erro ao verificar username:', error);
+      return false;
+    }
   }
 
   // Listar apenas usuários ativos
@@ -131,17 +87,55 @@ export class UsuariosService {
     };
   }
 
-  // Obter usuários para seleção (id + nome)
+  // Obter usuários para seleção (id + nome completo)
   static async obterParaSelect(): Promise<{ value: string; label: string }[]> {
     try {
       const response = await this.listarAtivos();
       return response.data.map(usuario => ({
         value: usuario._id,
-        label: usuario.nome
+        label: `${usuario.nome} ${usuario.apelido}`
       }));
     } catch (error) {
       console.error('Erro ao obter usuários para seleção:', error);
       return [];
+    }
+  }
+
+  // Obter estatísticas de usuários
+  static async obterEstatisticas(): Promise<{
+    total: number;
+    ativos: number;
+    inativos: number;
+    porRole: Record<string, number>;
+  }> {
+    try {
+      const response = await this.listar({ limit: 1000 });
+      const usuarios = response.data;
+      
+      const ativos = usuarios.filter(u => u.ativo).length;
+      const inativos = usuarios.length - ativos;
+      
+      const porRole: Record<string, number> = {};
+      usuarios.forEach(usuario => {
+        usuario.roles.forEach(role => {
+          porRole[role] = (porRole[role] || 0) + 1;
+        });
+      });
+
+      return {
+        total: usuarios.length,
+        ativos,
+        inativos,
+        porRole
+      };
+    } catch (error) {
+      console.error('Erro ao obter estatísticas de usuários:', error);
+      return {
+        total: 0,
+        ativos: 0,
+        inativos: 0,
+        porRole: {}
+      };
     }
   }
 }

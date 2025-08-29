@@ -4,31 +4,41 @@ import React, { useState, useEffect } from 'react';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
-import { Users, Edit, Trash2, Eye, Shield, User, Mail, Building2 } from 'lucide-react';
-import { Usuario } from '@/services/usuariosService';
+import FormModal from '@/components/ui/FormModal';
+import UsuarioForm from '@/components/forms/UsuarioForm';
+import { Users, Edit, Trash2, Eye, Shield, User, Building2 } from 'lucide-react';
+import { Usuario } from '@/types';
 import { useUsuarios } from '@/hooks/useUsuarios';
+import { usePaginatedData } from '@/hooks/usePaginatedData';
 
 const UsuariosPage = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null);
+  
   const {
-    usuarios,
-    loading,
-    carregar,
-    buscarPorTexto,
+    carregarPaginado,
     remover
   } = useUsuarios();
 
+  // Hook de paginação com dados da API
+  const {
+    data: usuarios,
+    loading,
+    setSearchQuery,
+    handleSort,
+    paginationProps,
+    refetch
+  } = usePaginatedData({
+    fetchData: carregarPaginado,
+    initialItemsPerPage: 10
+  });
+
   useEffect(() => {
-    carregar();
-  }, [carregar]);
+    // O usePaginatedData já carrega os dados automaticamente
+  }, []);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      carregar();
-      return;
-    }
-    buscarPorTexto(query);
   };
 
   const handleDelete = async (usuario: Usuario) => {
@@ -38,22 +48,43 @@ const UsuariosPage = () => {
 
     try {
       await remover(usuario._id);
-      carregar(); // Recarregar lista
+      refetch(); // Recarregar lista
     } catch (err) {
       // Erro já tratado pelo hook
       console.error('Erro ao excluir usuário:', err);
     }
   };
 
-  const getRoleBadge = (role: string) => {
+  const handleAdd = () => {
+    setSelectedUsuario(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (usuario: Usuario) => {
+    setSelectedUsuario(usuario);
+    setIsFormOpen(true);
+  };
+
+  const handleFormSuccess = () => {
+    refetch(); // Recarregar lista após sucesso
+    setIsFormOpen(false); // Fechar modal
+    setSelectedUsuario(null); // Limpar seleção
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setSelectedUsuario(null);
+  };
+
+  const getRoleBadges = (roles: string[]) => {
     const roleMap: Record<string, { label: string; class: string; icon: React.ReactNode }> = {
       admin: { 
         label: 'Admin', 
         class: 'bg-red-100 text-red-800',
         icon: <Shield className="w-3 h-3" />
       },
-      manager: { 
-        label: 'Gerente', 
+      editor: { 
+        label: 'Editor', 
         class: 'bg-blue-100 text-blue-800',
         icon: <Users className="w-3 h-3" />
       },
@@ -64,31 +95,22 @@ const UsuariosPage = () => {
       },
     };
     
-    const roleInfo = roleMap[role] || roleMap.user;
-    
     return (
-      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${roleInfo.class}`}>
-        {roleInfo.icon}
-        <span className="ml-1">{roleInfo.label}</span>
-      </span>
+      <div className="flex flex-wrap gap-1">
+        {roles.map((role, index) => {
+          const roleInfo = roleMap[role] || roleMap.user;
+          return (
+            <span key={index} className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${roleInfo.class}`}>
+              {roleInfo.icon}
+              <span className="ml-1">{roleInfo.label}</span>
+            </span>
+          );
+        })}
+      </div>
     );
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 3600);
-    
-    if (diffInHours < 1) {
-      return 'Agora mesmo';
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h atrás`;
-    } else {
-      return date.toLocaleDateString('pt-BR');
-    }
-  };
-
-  const columns: TableColumn[] = [
+  const columns: TableColumn<Usuario>[] = [
     {
       key: 'nome',
       title: 'Usuário',
@@ -102,10 +124,8 @@ const UsuariosPage = () => {
           </div>
           <div>
             <div className="font-medium text-gray-900">{value}</div>
-            <div className="text-sm text-gray-500 flex items-center">
-              <Mail className="w-3 h-3 mr-1" />
-              {record.email}
-            </div>
+            <div className="text-sm text-gray-500">@{record.username}</div>
+            <div className="text-sm text-gray-500">{record.apelido}</div>
           </div>
         </div>
       ),
@@ -125,22 +145,11 @@ const UsuariosPage = () => {
       ),
     },
     {
-      key: 'role',
-      title: 'Função',
+      key: 'roles',
+      title: 'Funções',
       sortable: true,
-      width: 'w-24',
-      render: (value) => getRoleBadge(value),
-    },
-    {
-      key: 'ultimoLogin',
-      title: 'Último Login',
-      sortable: true,
-      width: 'w-28',
-      render: (value) => (
-        <span className="text-sm text-gray-600">
-          {formatDate(value)}
-        </span>
-      ),
+      width: 'w-32',
+      render: (value) => getRoleBadges(value),
     },
     {
       key: 'dataCriacao',
@@ -172,7 +181,7 @@ const UsuariosPage = () => {
     },
   ];
 
-  const actions: TableAction[] = [
+  const actions: TableAction<Usuario>[] = [
     {
       key: 'view',
       label: 'Visualizar',
@@ -185,9 +194,7 @@ const UsuariosPage = () => {
       key: 'edit',
       label: 'Editar',
       icon: <Edit className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Editar usuário:', record);
-      },
+      onClick: handleEdit,
     },
     {
       key: 'permissions',
@@ -212,7 +219,7 @@ const UsuariosPage = () => {
         <PageHeader
           title="Usuários"
           subtitle="Gerencie os usuários do sistema"
-          onAdd={() => console.log('Adicionar usuário')}
+          onAdd={handleAdd}
           onSearch={handleSearch}
           onFilter={() => console.log('Filtrar usuários')}
           onExport={() => console.log('Exportar usuários')}
@@ -221,15 +228,26 @@ const UsuariosPage = () => {
         />
 
         <DataTable
-          data={usuarios}
+          data={usuarios as Usuario[]}
           columns={columns}
           actions={actions}
           loading={loading}
           emptyMessage="Nenhum usuário encontrado"
-          onSort={(column, direction) => {
-            console.log('Ordenar por:', column, direction);
-          }}
+          pagination={paginationProps}
+          onSort={handleSort}
         />
+
+        {/* Formulário Modal */}
+        <FormModal
+          isOpen={isFormOpen}
+          onClose={handleFormClose}
+          title={selectedUsuario ? 'Editar Usuário' : 'Novo Usuário'}
+        >
+          <UsuarioForm
+            usuario={selectedUsuario}
+            onSuccess={handleFormSuccess}
+          />
+        </FormModal>
       </div>
     </ManageLayout>
   );

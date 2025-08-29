@@ -56,13 +56,13 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
       href: '/manage/tipos',
       description: 'Gerenciar tipos de documento'
     }
-    // TODO: Adicionar Usuários quando implementar Auth0
-    // {
-    //   title: 'Usuários',
-    //   icon: Users,
-    //   href: '/manage/usuarios',
-    //   description: 'Gerenciar usuários'
-    // }
+   ,
+    {
+      title: 'Usuários',
+      icon: Users,
+      href: '/features/usuarios',
+      description: 'Gerenciar usuários'
+    }
   ];
 
   const isActive = (href: string) => pathname === href;
