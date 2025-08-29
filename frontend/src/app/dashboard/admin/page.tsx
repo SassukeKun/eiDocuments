@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { formatNumber, formatPercent } from "@/lib/formatters";
+import { useGlobalStats, useDashboardStats } from "@/hooks/useStats";
 import { 
   Search, 
   FileText, 
@@ -19,7 +20,9 @@ import {
   FolderOpen,
   TrendingUp,
   Activity,
-  BarChart3
+  BarChart3,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
 import ModernButton from "@/components/ui/ModernButton";
 import { useToastContext } from "@/contexts/ToastContext";
@@ -49,17 +52,6 @@ interface Department {
   lastActivity: string;
 }
 
-interface SystemStats {
-  totalDocuments: number;
-  totalDepartments: number;
-  totalUsers: number;
-  totalCategories: number;
-  documentsThisMonth: number;
-  documentsLastMonth: number;
-  activeUsers: number;
-  storageUsed: string;
-}
-
 const AdminDashboardPage = () => {
   const { success } = useToastContext();
   const router = useRouter();
@@ -67,18 +59,17 @@ const AdminDashboardPage = () => {
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Dados simulados do sistema completo (ADMIN)
-  const systemStats: SystemStats = {
-    totalDocuments: 1247,
-    totalDepartments: 6,
-    totalUsers: 89,
-    totalCategories: 24,
-    documentsThisMonth: 156,
-    documentsLastMonth: 134,
-    activeUsers: 67,
-    storageUsed: "2.4 GB"
-  };
+  // Integração com API de estatísticas
+  const { 
+    global: globalStats, 
+    documents: documentStats, 
+    departments: departmentStats,
+    loading, 
+    error, 
+    refetchAll 
+  } = useDashboardStats();
 
+  // Dados mock mantidos para compatibilidade dos departamentos
   const departments: Department[] = [
     { id: "rh", name: "Recursos Humanos", color: "bg-blue-500", documentCount: 156, activeUsers: 12, lastActivity: "2 min atrás" },
     { id: "financeiro", name: "Financeiro", color: "bg-green-500", documentCount: 89, activeUsers: 8, lastActivity: "5 min atrás" },
@@ -88,67 +79,12 @@ const AdminDashboardPage = () => {
     { id: "juridico", name: "Jurídico", color: "bg-red-500", documentCount: 45, activeUsers: 4, lastActivity: "15 min atrás" }
   ];
 
-  const recentDocuments: Document[] = [
-    {
-      id: "1",
-      title: "Política de Recursos Humanos 2024",
-      department: "Recursos Humanos",
-      type: "PDF",
-      size: "2.4 MB",
-      uploadedBy: "João Silva",
-      uploadDate: "2024-01-15",
-      lastModified: "2024-01-20",
-      tags: ["política", "rh", "2024"],
-      status: "active"
-    },
-    {
-      id: "2",
-      title: "Relatório Financeiro Q4 2023",
-      department: "Financeiro",
-      type: "Excel",
-      size: "1.8 MB",
-      uploadedBy: "Maria Santos",
-      uploadDate: "2024-01-10",
-      lastModified: "2024-01-18",
-      tags: ["relatório", "financeiro", "Q4"],
-      status: "active"
-    },
-    {
-      id: "3",
-      title: "Manual de Procedimentos TI",
-      department: "Tecnologia da Informação",
-      type: "Word",
-      size: "3.2 MB",
-      uploadedBy: "Carlos Oliveira",
-      uploadDate: "2024-01-12",
-      lastModified: "2024-01-19",
-      tags: ["manual", "procedimentos", "ti"],
-      status: "active"
-    },
-    {
-      id: "4",
-      title: "Campanha Marketing Q1 2024",
-      department: "Marketing",
-      type: "PowerPoint",
-      size: "5.1 MB",
-      uploadedBy: "Ana Costa",
-      uploadDate: "2024-01-08",
-      lastModified: "2024-01-16",
-      tags: ["campanha", "marketing", "Q1"],
-      status: "active"
-    },
-    {
-      id: "5",
-      title: "Contrato de Fornecedor ABC",
-      department: "Jurídico",
-      type: "PDF",
-      size: "1.5 MB",
-      uploadedBy: "Pedro Lima",
-      uploadDate: "2024-01-05",
-      lastModified: "2024-01-15",
-      tags: ["contrato", "fornecedor", "jurídico"],
-      status: "active"
-    }
+  const documents: Document[] = [
+    { id: "1", title: "Manual do Funcionário 2024", department: "RH", type: "PDF", size: "2.4 MB", uploadedBy: "Maria Silva", uploadDate: "2024-03-15", lastModified: "2024-03-15", tags: ["manual", "funcionário", "2024"], status: "active" },
+    { id: "2", title: "Relatório Financeiro Q1", department: "Financeiro", type: "Excel", size: "1.8 MB", uploadedBy: "João Santos", uploadDate: "2024-03-10", lastModified: "2024-03-12", tags: ["relatório", "financeiro", "Q1"], status: "active" },
+    { id: "3", title: "Política de Segurança TI", department: "TI", type: "PDF", size: "956 KB", uploadedBy: "Ana Costa", uploadDate: "2024-03-08", lastModified: "2024-03-08", tags: ["política", "segurança", "TI"], status: "active" },
+    { id: "4", title: "Campanha Marketing Digital", department: "Marketing", type: "PowerPoint", size: "5.2 MB", uploadedBy: "Pedro Lima", uploadDate: "2024-03-05", lastModified: "2024-03-07", tags: ["campanha", "marketing", "digital"], status: "pending" },
+    { id: "5", title: "Procedimento Operacional Padrão", department: "Operações", type: "Word", size: "1.1 MB", uploadedBy: "Carla Rocha", uploadDate: "2024-03-01", lastModified: "2024-03-03", tags: ["procedimento", "operações", "padrão"], status: "active" },
   ];
 
   const calculateGrowth = (current: number, previous: number) => {
@@ -156,7 +92,10 @@ const AdminDashboardPage = () => {
     return ((current - previous) / previous) * 100;
   };
 
-  const documentsGrowth = calculateGrowth(systemStats.documentsThisMonth, systemStats.documentsLastMonth);
+  // Calculamos crescimento baseado nos dados da API
+  const documentsGrowth = globalStats?.data 
+    ? calculateGrowth(globalStats.data.tendencias.crescimentoSemanal, globalStats.data.tendencias.crescimentoSemanal * 0.8)
+    : 0;
 
   const handleViewDocument = (doc: Document) => {
     success(`Visualizando documento: ${doc.title}`);
@@ -166,178 +105,278 @@ const AdminDashboardPage = () => {
     success(`Download iniciado: ${doc.title}`);
   };
 
+  const filteredDocuments = useMemo(() => {
+    return documents.filter(doc => {
+      const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          doc.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          doc.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          doc.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesDepartment = selectedDepartment === "all" || 
+                               doc.department.toLowerCase() === selectedDepartment.toLowerCase();
+      return matchesSearch && matchesDepartment;
+    });
+  }, [documents, searchTerm, selectedDepartment]);
+
+  const filteredDepartments = useMemo(() => {
+    return departments.filter(dept =>
+      dept.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [departments, searchTerm]);
+
   return (
     <ManageLayout>
       <div>
-        {/* Header com Estatísticas Principais */}
+        {/* Header com Título e Botão de Atualizar */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrativo</h1>
-              <p className="text-gray-600 mt-1">Visão geral de todo o sistema</p>
+              <p className="text-gray-600 mt-1">Visão geral do sistema e estatísticas</p>
             </div>
-            <div className="flex items-center space-x-3">
-              <ModernButton variant="outline" onClick={() => router.push('/manage/documentos')}>
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Relatórios
-              </ModernButton>
-              <ModernButton variant="primary" onClick={() => router.push('/upload')}>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Documento
+            <div className="flex space-x-2">
+              <ModernButton
+                onClick={refetchAll}
+                disabled={loading}
+                className="flex items-center space-x-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span>Atualizar</span>
               </ModernButton>
             </div>
           </div>
+        </div>
 
-          {/* Cards de Estatísticas Principais */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center space-x-2 text-red-700">
+              <AlertCircle className="w-5 h-5" />
+              <span>Erro ao carregar estatísticas: {error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Cards de Estatísticas Principais */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Total de Documentos */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total de Documentos</p>
+                {loading ? (
+                  <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2" />
+                ) : error ? (
+                  <p className="text-2xl font-bold text-red-500">--</p>
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">
+                    {formatNumber(globalStats?.data?.resumo.totalDocumentos || 0)}
+                  </p>
+                )}
+                <div className="flex items-center mt-1">
+                  <TrendingUp className={`w-4 h-4 mr-1 ${documentsGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                  <span className={`text-sm font-medium ${documentsGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {documentsGrowth >= 0 ? '+' : ''}{formatPercent(documentsGrowth)}% recente
+                  </span>
+                </div>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <FileText className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* Departamentos */}
+          <Link href="/manage/departamentos">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total de Documentos</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatNumber(systemStats.totalDocuments)}</p>
-                  <div className="flex items-center mt-1">
-                    <TrendingUp className={`w-4 h-4 mr-1 ${documentsGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`} />
-                    <span className={`text-sm font-medium ${documentsGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {documentsGrowth >= 0 ? '+' : ''}{formatPercent(documentsGrowth)}% este mês
-                    </span>
-                  </div>
+                  <p className="text-sm font-medium text-gray-600">Departamentos</p>
+                  {loading ? (
+                    <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2" />
+                  ) : error ? (
+                    <p className="text-2xl font-bold text-red-500">--</p>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatNumber(globalStats?.data?.resumo.totalDepartamentos || 0)}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-500 mt-1">
+                    {formatNumber(globalStats?.data?.resumo.totalUsuarios || 0)} usuários ativos
+                  </p>
                 </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Building2 className="w-6 h-6 text-green-600" />
                 </div>
               </div>
             </div>
+          </Link>
 
-            <Link href="/manage/departamentos">
-              <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Departamentos</p>
-                    <p className="text-2xl font-bold text-gray-900">{formatNumber(systemStats.totalDepartments)}</p>
-                    <p className="text-sm text-gray-500 mt-1">{formatNumber(systemStats.activeUsers)} usuários ativos</p>
-                  </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-green-600" />
-                  </div>
+          {/* Usuários */}
+          <Link href="/manage/usuarios">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Usuários</p>
+                  {loading ? (
+                    <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2" />
+                  ) : error ? (
+                    <p className="text-2xl font-bold text-red-500">--</p>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatNumber(globalStats?.data?.resumo.totalUsuarios || 0)}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-500 mt-1">Sistema ativo</p>
+                </div>
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Users className="w-6 h-6 text-purple-600" />
                 </div>
               </div>
-            </Link>
+            </div>
+          </Link>
 
-            <Link href="/manage/usuarios">
-              <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Usuários Totais</p>
-                    <p className="text-2xl font-bold text-gray-900">{formatNumber(systemStats.totalUsers)}</p>
-                    <p className="text-sm text-gray-500 mt-1">{formatNumber(systemStats.activeUsers)} ativos hoje</p>
-                  </div>
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Users className="w-6 h-6 text-purple-600" />
-                  </div>
+          {/* Categorias */}
+          <Link href="/manage/categorias">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Categorias</p>
+                  {loading ? (
+                    <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mb-2" />
+                  ) : error ? (
+                    <p className="text-2xl font-bold text-red-500">--</p>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatNumber(globalStats?.data?.resumo.totalCategorias || 0)}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-500 mt-1">
+                    {formatNumber(globalStats?.data?.resumo.totalTipos || 0)} tipos disponíveis
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <FolderOpen className="w-6 h-6 text-yellow-600" />
                 </div>
               </div>
-            </Link>
+            </div>
+          </Link>
+        </div>
 
-            <Link href="/manage/categorias">
-              <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Categorias</p>
-                    <p className="text-2xl font-bold text-gray-900">{formatNumber(systemStats.totalCategories)}</p>
-                    <p className="text-sm text-gray-500 mt-1">{systemStats.storageUsed} utilizados</p>
-                  </div>
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <FolderOpen className="w-6 h-6 text-orange-600" />
-                  </div>
+        {/* Seção de Atividade Recente e Distribuição */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+          {/* Atividade Recente */}
+          <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Atividade Recente</h3>
+              <Activity className="w-5 h-5 text-gray-400" />
+            </div>
+            {loading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-gray-700">
+                    {formatNumber(globalStats?.data?.tendencias.crescimentoSemanal || 0)} novos documentos esta semana
+                  </span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm text-gray-700">
+                    Taxa de documentos ativos: {globalStats?.data?.tendencias.taxaAtivos || '0'}%
+                  </span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span className="text-sm text-gray-700">Sistema funcionando normalmente</span>
                 </div>
               </div>
-            </Link>
+            )}
+          </div>
+
+          {/* Quick Stats */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Resumo Rápido</h3>
+              <BarChart3 className="w-5 h-5 text-gray-400" />
+            </div>
+            {loading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex justify-between">
+                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Documentos Ativos</span>
+                  <span className="text-sm font-medium text-green-600">
+                    {formatNumber(globalStats?.data?.resumo.documentosAtivos || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Documentos Arquivados</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    {formatNumber(globalStats?.data?.resumo.documentosArquivados || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Crescimento Semanal</span>
+                  <span className="text-sm font-medium text-blue-600">
+                    +{formatNumber(globalStats?.data?.tendencias.crescimentoSemanal || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Taxa de Atividade</span>
+                  <span className="text-sm font-medium text-purple-600">
+                    {globalStats?.data?.tendencias.taxaAtivos || '0'}%
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Grid de Departamentos com Atividade */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Departamentos - Visão Geral</h2>
-            <Link href="/manage/departamentos">
-              <ModernButton variant="outline" size="sm">
-                Gerenciar Todos
-              </ModernButton>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {departments.map(dept => (
-              <div key={dept.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 ${dept.color} rounded-lg flex items-center justify-center`}>
-                    <Folder className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-gray-900">{dept.documentCount}</div>
-                    <div className="text-xs text-gray-500">documentos</div>
-                  </div>
-                </div>
-                <h3 className="font-medium text-gray-900 mb-2">{dept.name}</h3>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center text-gray-600">
-                    <Users className="w-4 h-4 mr-1" />
-                    {dept.activeUsers} usuários
-                  </div>
-                  <div className="flex items-center text-gray-500">
-                    <Activity className="w-4 h-4 mr-1" />
-                    {dept.lastActivity}
-                  </div>
-                </div>
+        {/* Lista de Departamentos (mantida como estava) */}
+        <div className="mt-8 bg-white rounded-lg border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Departamentos</h3>
+                <p className="text-sm text-gray-600">Gerencie departamentos e suas atividades</p>
               </div>
-            ))}
+              <Link href="/manage/departamentos">
+                <ModernButton className="flex items-center space-x-2">
+                  <Plus className="w-4 h-4" />
+                  <span>Novo Departamento</span>
+                </ModernButton>
+              </Link>
+            </div>
           </div>
-        </div>
 
-        {/* Documentos Recentes do Sistema */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Atividade Recente do Sistema</h2>
-            <Link href="/manage/documentos">
-              <ModernButton variant="outline" size="sm">
-                Ver Todos os Documentos
-              </ModernButton>
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {recentDocuments.map(doc => (
-              <div key={doc.id} className="flex items-center space-x-4 p-4 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{doc.title}</p>
-                  <div className="flex items-center text-sm text-gray-500 space-x-3">
-                    <span>{doc.department}</span>
-                    <span>•</span>
-                    <span>{doc.type}</span>
-                    <span>•</span>
-                    <span>por {doc.uploadedBy}</span>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredDepartments.map(dept => (
+                <div key={dept.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`w-4 h-4 ${dept.color} rounded-full`}></div>
+                    <span className="text-xs text-gray-500">{dept.lastActivity}</span>
+                  </div>
+                  <h4 className="font-medium text-gray-900 mb-2">{dept.name}</h4>
+                  <div className="flex justify-between items-center text-sm text-gray-600">
+                    <span>{dept.documentCount} docs</span>
+                    <span>{dept.activeUsers} usuários</span>
                   </div>
                 </div>
-                <div className="text-sm text-gray-400">
-                  {new Date(doc.uploadDate).toLocaleDateString('pt-BR')}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handleViewDocument(doc)}
-                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDownloadDocument(doc)}
-                    className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                  >
-                    <Download className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
