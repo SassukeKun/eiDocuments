@@ -14,7 +14,10 @@ import {
   ChevronRight,
   LogOut,
   Settings,
-  Users
+  Users,
+  Search,
+  Upload,
+  BookOpen
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -25,15 +28,50 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
-  const menuItems = [
+  // Área do Usuário
+  const userMenuItems = [
     {
       title: 'Dashboard',
       icon: Home,
-      href: '/dashboard',
+      href: '/dashboard/user',
+      description: 'Visão geral do departamento'
+    },
+    {
+      title: 'Documentos do Departamento',
+      icon: Building2,
+      href: '/user/documentos',
+      description: 'Ver documentos do seu departamento'
+    },
+    {
+      title: 'Meus Documentos',
+      icon: FolderOpen,
+      href: '/user/meus-documentos',
+      description: 'Documentos que você criou'
+    },
+    {
+      title: 'Buscar Documentos',
+      icon: Search,
+      href: '/user/buscar',
+      description: 'Pesquisar em todos os documentos'
+    },
+    {
+      title: 'Upload de Documento',
+      icon: Upload,
+      href: '/upload',
+      description: 'Enviar novo documento'
+    }
+  ];
+
+  // Área de Administração
+  const adminMenuItems = [
+    {
+      title: 'Dashboard Admin',
+      icon: Home,
+      href: '/dashboard/admin',
       description: 'Visão geral do sistema'
     },
     {
-      title: 'Documentos',
+      title: 'Gerenciar Documentos',
       icon: FileText,
       href: '/manage/documentos',
       description: 'Gerenciar todos os documentos'
@@ -55,8 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
       icon: FileType,
       href: '/manage/tipos',
       description: 'Gerenciar tipos de documento'
-    }
-   ,
+    },
     {
       title: 'Usuários',
       icon: Users,
@@ -65,7 +102,16 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     }
   ];
 
-  const isActive = (href: string) => pathname === href;
+  // TODO: Determinar baseado no role do usuário
+  const isAdmin = true; // Temporário - implementar lógica de autenticação
+  const menuItems = isAdmin ? [...userMenuItems, ...adminMenuItems] : userMenuItems;
+
+  const isActive = (href: string) => {
+    if (href === '/dashboard') {
+      return pathname === href;
+    }
+    return pathname.startsWith(href);
+  };
 
   return (
     <div className={`

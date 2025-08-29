@@ -13,12 +13,16 @@ import {
   AlertCircle,
   CheckCircle,
   Eye,
-  Download
+  Download,
+  Building2,
+  Save
 } from "lucide-react";
-import ModernButton from "@/components/ui/ModernButton";
-import ModernInput from "@/components/ui/ModernInput";
-import { useNotification } from "@/hooks/useNotification";
+import UserLayout from "@/components/ui/UserLayout";
+import PageHeader from "@/components/ui/PageHeader";
+import { useToastContext } from "@/contexts/ToastContext";
 import { useRouter } from "next/navigation";
+import { useDepartamentos } from "@/hooks/useDepartamentos";
+import { useEffect } from "react";
 
 interface UploadFile {
   id: string;
@@ -31,33 +35,44 @@ interface UploadFile {
   progress: number;
 }
 
-interface Department {
-  id: string;
-  name: string;
-  color: string;
+interface DocumentForm {
+  titulo: string;
+  descricao: string;
+  departamento: string;
+  categoria: string;
+  tipoMovimento: 'recebido' | 'enviado' | 'interno';
+  remetente: string;
+  destinatario: string;
+  responsavel: string;
+  tags: string[];
+  ativo: boolean;
 }
 
 const UploadPage = () => {
-  const { success, error } = useNotification();
+  const { success, error } = useToastContext();
   const router = useRouter();
+  const { departamentos, carregar: carregarDepartamentos } = useDepartamentos();
   
   const [files, setFiles] = useState<UploadFile[]>([]);
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
-  const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
-  const [description, setDescription] = useState("");
-  const [responsible, setResponsible] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [formData, setFormData] = useState<DocumentForm>({
+    titulo: '',
+    descricao: '',
+    departamento: '',
+    categoria: '',
+    tipoMovimento: 'interno',
+    remetente: '',
+    destinatario: '',
+    responsavel: '',
+    tags: [],
+    ativo: true
+  });
 
-  const departments: Department[] = [
-    { id: "rh", name: "Recursos Humanos", color: "bg-blue-500" },
-    { id: "financeiro", name: "Financeiro", color: "bg-green-500" },
-    { id: "ti", name: "Tecnologia da Informação", color: "bg-purple-500" },
-    { id: "marketing", name: "Marketing", color: "bg-pink-500" },
-    { id: "operacoes", name: "Operações", color: "bg-orange-500" },
-    { id: "juridico", name: "Jurídico", color: "bg-red-500" }
-  ];
+  useEffect(() => {
+    carregarDepartamentos();
+  }, [carregarDepartamentos]);
 
   const allowedFileTypes = [
     'application/pdf',
@@ -145,12 +160,17 @@ const UploadPage = () => {
 
         validFiles.push(uploadFile);
       } else {
-        error("Arquivo inválido", validation.error);
+        error(validation.error || "Arquivo inválido");
       }
     });
 
     if (validFiles.length > 0) {
       setFiles(prev => [...prev, ...validFiles]);
+      // Auto-preencher título se vazio e só tiver um arquivo
+      if (!formData.titulo && validFiles.length === 1) {
+        const fileName = validFiles[0].name.split('.')[0];
+        setFormData(prev => ({ ...prev, titulo: fileName }));
+      }
     }
   };
 
@@ -159,14 +179,20 @@ const UploadPage = () => {
   };
 
   const addTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setTags(prev => [...prev, newTag.trim()]);
+    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, newTag.trim()]
+      }));
       setNewTag("");
     }
   };
 
   const removeTag = (tagToRemove: string) => {
-    setTags(prev => prev.filter(tag => tag !== tagToRemove));
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
   };
 
   const handleTagKeyPress = (e: React.KeyboardEvent) => {
@@ -174,6 +200,10 @@ const UploadPage = () => {
       e.preventDefault();
       addTag();
     }
+  };
+
+  const handleInputChange = (field: keyof DocumentForm, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -196,89 +226,76 @@ const UploadPage = () => {
 
   const handleUpload = async () => {
     if (files.length === 0) {
-              error("Erro", "Selecione pelo menos um arquivo para upload");
+      error("Selecione pelo menos um arquivo para upload");
       return;
     }
 
-    if (!selectedDepartment) {
-              error("Erro", "Selecione um departamento");
+    if (!formData.titulo.trim()) {
+      error("Digite um título para o documento");
+      return;
+    }
+
+    if (!formData.departamento) {
+      error("Selecione um departamento");
       return;
     }
 
     setIsUploading(true);
 
-    // Simular upload com progresso
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      
-      // Simular progresso
-      for (let progress = 0; progress <= 100; progress += 10) {
+    try {
+      // Simular upload com progresso
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Simular progresso
+        for (let progress = 0; progress <= 100; progress += 10) {
+          setFiles(prev => prev.map(f => 
+            f.id === file.id ? { ...f, progress } : f
+          ));
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // Marcar como sucesso
         setFiles(prev => prev.map(f => 
-          f.id === file.id ? { ...f, progress } : f
+          f.id === file.id ? { ...f, status: 'success' as const, progress: 100 } : f
         ));
-        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      // Marcar como sucesso
-      setFiles(prev => prev.map(f => 
-        f.id === file.id ? { ...f, status: 'success' as const, progress: 100 } : f
-      ));
+      success(`Upload concluído! ${files.length} arquivo(s) enviado(s) com sucesso`);
+      
+      // Redirecionar para meus documentos após 2 segundos
+      setTimeout(() => {
+        router.push('/user/meus-documentos');
+      }, 2000);
+    } catch (err) {
+      error("Erro durante o upload. Tente novamente.");
+      setFiles(prev => prev.map(f => ({ ...f, status: 'error' as const })));
+    } finally {
+      setIsUploading(false);
     }
-
-    setIsUploading(false);
-    success("Upload concluído!", `${files.length} arquivo(s) enviado(s) com sucesso`);
-    
-    // Redirecionar para dashboard após 2 segundos
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 2000);
   };
 
-  const isFormValid = files.length > 0 && selectedDepartment && !isUploading;
+  const isFormValid = files.length > 0 && formData.titulo.trim() && formData.departamento && !isUploading;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <FileText className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">eiDocuments</h1>
-                <p className="text-sm text-gray-600">Upload de Documentos</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <ModernButton
-                variant="outline"
-                onClick={() => router.push('/dashboard')}
-              >
-                Voltar ao Dashboard
-              </ModernButton>
-            </div>
-          </div>
-        </div>
-      </header>
+    <UserLayout>
+      <div>
+        <PageHeader
+          title="Upload de Documentos"
+          subtitle="Adicione novos documentos ao sistema"
+          showAdd={false}
+          showExport={false}
+          showSearch={false}
+          showFilter={false}
+        />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Área de Upload */}
-        <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Adicionar Novos Documentos
-            </h2>
-            <p className="text-gray-600">
-              Arraste e solte arquivos ou clique para selecionar
-            </p>
-          </div>
-
+        {/* Área de Upload de Arquivos */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Selecionar Arquivos</h3>
+          
           {/* Drag & Drop Area */}
           <div
-            className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
               isDragOver 
                 ? 'border-blue-500 bg-blue-50' 
                 : 'border-gray-300 hover:border-gray-400'
@@ -287,7 +304,7 @@ const UploadPage = () => {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <Upload className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <p className="text-lg font-medium text-gray-900 mb-2">
               {isDragOver ? 'Solte os arquivos aqui' : 'Arraste arquivos aqui'}
             </p>
@@ -305,65 +322,70 @@ const UploadPage = () => {
             />
             
             <label htmlFor="file-input">
-              <ModernButton variant="primary" className="cursor-pointer">
+              <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors cursor-pointer">
+                <Plus className="w-4 h-4 mr-2" />
                 Selecionar Arquivos
-              </ModernButton>
+              </button>
             </label>
             
             <p className="text-sm text-gray-500 mt-4">
-              Tipos suportados: PDF, Word, Excel, PowerPoint, Imagens, Texto
+              Tipos suportados: PDF, Word, Excel, PowerPoint, Imagens, Texto • Máximo: 50MB
             </p>
-            <p className="text-sm text-gray-500">
-              Tamanho máximo: 50MB por arquivo
-            </p>
-                    </div>
+          </div>
         </div>
 
-        {/* Lista de Arquivos */}
+        {/* Lista de Arquivos Selecionados */}
         {files.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Arquivos Selecionados ({files.length})
             </h3>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               {files.map((file) => (
-                <div key={file.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-2xl">{getFileIcon(file.type)}</div>
+                <div key={file.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-xl">{getFileIcon(file.type)}</div>
                     <div>
-                      <p className="font-medium text-gray-900">{file.name}</p>
-                      <p className="text-sm text-gray-600">
-                        {formatFileSize(file.size)} • {file.type}
+                      <p className="font-medium text-gray-900 text-sm">{file.name}</p>
+                      <p className="text-xs text-gray-600">
+                        {formatFileSize(file.size)}
                       </p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3">
                     {file.status === 'uploading' && (
                       <div className="flex items-center space-x-2">
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                        <div className="w-16 bg-gray-200 rounded-full h-1.5">
                           <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
                             style={{ width: `${file.progress}%` }}
                           ></div>
                         </div>
-                        <span className="text-sm text-gray-600">{file.progress}%</span>
+                        <span className="text-xs text-gray-600">{file.progress}%</span>
                       </div>
                     )}
                     
                     {file.status === 'success' && (
-                      <div className="flex items-center space-x-2 text-green-600">
-                        <CheckCircle className="h-5 w-5" />
-                        <span className="text-sm font-medium">Enviado</span>
+                      <div className="flex items-center space-x-1 text-green-600">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-xs font-medium">Enviado</span>
+                      </div>
+                    )}
+                    
+                    {file.status === 'error' && (
+                      <div className="flex items-center space-x-1 text-red-600">
+                        <AlertCircle className="h-4 w-4" />
+                        <span className="text-xs font-medium">Erro</span>
                       </div>
                     )}
                     
                     <button
                       onClick={() => removeFile(file.id)}
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                     >
-                      <X className="h-5 w-5" />
+                      <X className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -373,136 +395,217 @@ const UploadPage = () => {
         )}
 
         {/* Formulário de Metadados */}
-        <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">
             Informações do Documento
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Título */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Título do Documento *
+              </label>
+              <input
+                type="text"
+                value={formData.titulo}
+                onChange={(e) => handleInputChange('titulo', e.target.value)}
+                className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Digite o título do documento"
+                required
+              />
+            </div>
+
             {/* Departamento */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Departamento *
               </label>
               <select
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={formData.departamento}
+                onChange={(e) => handleInputChange('departamento', e.target.value)}
+                className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               >
                 <option value="">Selecione um departamento</option>
-                {departments.map(dept => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name}
+                {departamentos.map(dept => (
+                  <option key={dept._id} value={dept._id}>
+                    {dept.nome}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Responsável */}
+            {/* Tipo de Movimento */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Responsável
+                Tipo de Movimento
               </label>
-              <ModernInput
-                placeholder="Nome do responsável"
-                value={responsible}
-                onChange={(e) => setResponsible(e.target.value)}
-                icon={<User className="h-5 w-5 text-gray-400" />}
-              />
-            </div>
-          </div>
-
-          {/* Descrição */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Descrição
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descreva o conteúdo do documento..."
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            />
-          </div>
-
-          {/* Tags */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tags
-            </label>
-            <div className="flex items-center space-x-2 mb-3">
-              <ModernInput
-                placeholder="Adicionar tag..."
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyDown={handleTagKeyPress}
-                icon={<Tag className="h-5 w-5 text-gray-400" />}
-                className="flex-1"
-              />
-              <ModernButton
-                variant="outline"
-                onClick={addTag}
-                disabled={!newTag.trim()}
-                size="sm"
+              <select
+                value={formData.tipoMovimento}
+                onChange={(e) => handleInputChange('tipoMovimento', e.target.value as 'recebido' | 'enviado' | 'interno')}
+                className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <Plus className="h-4 w-4" />
-              </ModernButton>
+                <option value="interno">Interno</option>
+                <option value="recebido">Recebido</option>
+                <option value="enviado">Enviado</option>
+              </select>
             </div>
-            
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center space-x-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                  >
-                    <span>{tag}</span>
-                    <button
-                      onClick={() => removeTag(tag)}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </span>
-                ))}
+
+            {/* Campos condicionais baseados no tipo de movimento */}
+            {formData.tipoMovimento === 'recebido' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Remetente
+                </label>
+                <input
+                  type="text"
+                  value={formData.remetente}
+                  onChange={(e) => handleInputChange('remetente', e.target.value)}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Nome do remetente"
+                />
               </div>
             )}
+
+            {formData.tipoMovimento === 'enviado' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Destinatário
+                </label>
+                <input
+                  type="text"
+                  value={formData.destinatario}
+                  onChange={(e) => handleInputChange('destinatario', e.target.value)}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Nome do destinatário"
+                />
+              </div>
+            )}
+
+            {formData.tipoMovimento === 'interno' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Responsável
+                </label>
+                <input
+                  type="text"
+                  value={formData.responsavel}
+                  onChange={(e) => handleInputChange('responsavel', e.target.value)}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Nome do responsável"
+                />
+              </div>
+            )}
+
+            {/* Descrição */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Descrição
+              </label>
+              <textarea
+                value={formData.descricao}
+                onChange={(e) => handleInputChange('descricao', e.target.value)}
+                placeholder="Descreva o conteúdo do documento..."
+                rows={3}
+                className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              />
+            </div>
+
+            {/* Tags */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tags
+              </label>
+              <div className="flex items-center space-x-2 mb-3">
+                <div className="flex-1 relative">
+                  <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Adicionar tag..."
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={handleTagKeyPress}
+                    className="block w-full pl-10 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={addTag}
+                  disabled={!newTag.trim()}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              
+              {formData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center space-x-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                    >
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Botão de Upload */}
-        <div className="text-center">
-          <ModernButton
-            variant="primary"
-            size="lg"
+        {/* Botões de Ação */}
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </button>
+
+          <button
             onClick={handleUpload}
             disabled={!isFormValid}
-            className="px-12 py-4 text-lg"
+            className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isUploading ? (
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 <span>Enviando...</span>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center space-x-2">
-                <Upload className="h-5 w-5" />
-                <span>Enviar {files.length} Arquivo(s)</span>
-              </div>
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                <span>Enviar {files.length > 0 ? `${files.length} Arquivo(s)` : 'Documento'}</span>
+              </>
             )}
-          </ModernButton>
-          
-          {!isFormValid && (
-            <p className="text-sm text-gray-500 mt-3">
-              {files.length === 0 && "Selecione pelo menos um arquivo • "}
-              {!selectedDepartment && "Selecione um departamento"}
-            </p>
-          )}
+          </button>
         </div>
+
+        {/* Mensagem de validação */}
+        {!isFormValid && (files.length > 0 || formData.titulo || formData.departamento) && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <div className="flex items-center">
+              <AlertCircle className="h-4 w-4 text-yellow-600 mr-2" />
+              <p className="text-sm text-yellow-800">
+                {files.length === 0 && "Selecione pelo menos um arquivo • "}
+                {!formData.titulo.trim() && "Digite um título • "}
+                {!formData.departamento && "Selecione um departamento"}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </UserLayout>
   );
 };
 
