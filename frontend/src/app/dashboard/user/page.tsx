@@ -177,7 +177,7 @@ const UserDashboardPage = () => {
                 <Search className="w-4 h-4 mr-2" />
                 Buscar
               </ModernButton>
-              <ModernButton variant="primary" onClick={() => router.push('/upload')}>
+              <ModernButton variant="primary" onClick={() => router.push('/user/upload')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Documento
               </ModernButton>
