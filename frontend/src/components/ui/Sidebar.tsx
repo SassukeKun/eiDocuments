@@ -59,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     {
       title: 'Upload de Documento',
       icon: Upload,
-      href: '/upload',
+      href: '/user/upload',
       description: 'Enviar novo documento'
     }
   ];

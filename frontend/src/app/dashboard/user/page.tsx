@@ -121,7 +121,7 @@ const UserDashboardPage = () => {
       title: "Upload de Documento",
       description: "Adicionar novo documento ao departamento",
       icon: <Upload className="w-5 h-5" />,
-      href: "/upload",
+      href: "/user/upload",
       color: "bg-blue-500"
     },
     {
