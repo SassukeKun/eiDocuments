@@ -48,19 +48,47 @@ async function apiRequest<T>(
 
   try {
     const response = await fetch(url, config);
+    console.log(`API Response: ${response.status} - ${config.method} ${url}`);
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        success: false,
-        message: `HTTP ${response.status}: ${response.statusText}`
-      }));
+      let errorData;
+      try {
+        // Tentar parsear JSON apenas se há conteúdo
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+        } else {
+          errorData = {
+            success: false,
+            message: `HTTP ${response.status}: ${response.statusText}`
+          };
+        }
+      } catch {
+        errorData = {
+          success: false,
+          message: `HTTP ${response.status}: ${response.statusText}`
+        };
+      }
       
       throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return await response.json();
+    // Se a resposta é 204 (No Content), retornar objeto vazio
+    if (response.status === 204) {
+      // console.log('Response 204 - No Content detected');
+      return { success: true } as T;
+    }
+
+    // Verificar se há conteúdo para parsear
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await response.json();
+    }
+
+    // Se não há JSON, retornar sucesso genérico
+    return { success: true } as T;
   } catch (error) {
-    console.error('API Request Error:', error);
+    // console.error('API Request Error:', error);
     throw error;
   }
 }

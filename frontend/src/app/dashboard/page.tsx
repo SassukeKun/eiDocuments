@@ -20,7 +20,7 @@ import {
 import ModernButton from "@/components/ui/ModernButton";
 import ModernInput from "@/components/ui/ModernInput";
 import ManageLayout from "@/components/ui/ManageLayout";
-import { useNotification } from "@/hooks/useNotification";
+import { useToastContext } from "@/contexts/ToastContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -45,7 +45,7 @@ interface Department {
 }
 
 const DashboardPage = () => {
-  const { success } = useNotification();
+  const { success } = useToastContext();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");

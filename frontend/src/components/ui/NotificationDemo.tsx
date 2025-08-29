@@ -2,10 +2,10 @@
 
 import React from "react";
 import ModernButton from "./ModernButton";
-import { useNotification } from "@/hooks/useNotification";
+import { useToastContext } from "@/contexts/ToastContext";
 
 const NotificationDemo: React.FC = () => {
-  const { success, error, warning, info } = useNotification();
+  const { success, error, warning, info } = useToastContext();
 
   return (
     <div className="fixed bottom-4 left-4 z-40 space-y-2">

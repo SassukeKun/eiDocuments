@@ -1,13 +1,13 @@
 import { useState, useCallback } from 'react';
 import { DocumentosService, DocumentoQueryParams, DocumentoCreateData, DocumentoUpdateData } from '@/services/documentosService';
 import { Documento } from '@/types';
-import { useNotification } from './useNotification';
+import { useToastContext } from '@/contexts/ToastContext';
 
 export const useDocumentos = () => {
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { success, error: showError } = useNotification();
+  const { success, error: showError } = useToastContext();
 
   // Carregar lista de documentos
   const carregar = useCallback(async (params?: DocumentoQueryParams) => {

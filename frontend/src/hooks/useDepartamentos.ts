@@ -7,13 +7,13 @@ import {
   DepartamentoQueryParams,
   ApiPaginatedResponse 
 } from '@/types';
-import { useNotification } from './useNotification';
+import { useToastContext } from '@/contexts/ToastContext';
 
 export const useDepartamentos = () => {
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { success, error: showError } = useNotification();
+  const { success, error: showError } = useToastContext();
 
   // Carregar lista de departamentos
   const carregar = useCallback(async (params?: DepartamentoQueryParams) => {
