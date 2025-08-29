@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { formatPercent } from "@/lib/formatters";
 import { 
   FileText, 
   Folder,  
@@ -194,7 +195,7 @@ const UserDashboardPage = () => {
                     <div className="flex items-center mt-1">
                       <TrendingUp className={`w-4 h-4 mr-1 ${documentsGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`} />
                       <span className={`text-sm font-medium ${documentsGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {documentsGrowth >= 0 ? '+' : ''}{documentsGrowth.toFixed(1)}% este mês
+                        {documentsGrowth >= 0 ? '+' : ''}{formatPercent(documentsGrowth)}% este mês
                       </span>
                     </div>
                   </div>

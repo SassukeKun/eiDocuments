@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { formatNumber, formatPercent } from "@/lib/formatters";
 import { 
   Search, 
   FileText, 
@@ -193,11 +194,11 @@ const AdminDashboardPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total de Documentos</p>
-                  <p className="text-2xl font-bold text-gray-900">{systemStats.totalDocuments.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatNumber(systemStats.totalDocuments)}</p>
                   <div className="flex items-center mt-1">
                     <TrendingUp className={`w-4 h-4 mr-1 ${documentsGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`} />
                     <span className={`text-sm font-medium ${documentsGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {documentsGrowth >= 0 ? '+' : ''}{documentsGrowth.toFixed(1)}% este mês
+                      {documentsGrowth >= 0 ? '+' : ''}{formatPercent(documentsGrowth)}% este mês
                     </span>
                   </div>
                 </div>
@@ -212,8 +213,8 @@ const AdminDashboardPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Departamentos</p>
-                    <p className="text-2xl font-bold text-gray-900">{systemStats.totalDepartments}</p>
-                    <p className="text-sm text-gray-500 mt-1">{systemStats.activeUsers} usuários ativos</p>
+                    <p className="text-2xl font-bold text-gray-900">{formatNumber(systemStats.totalDepartments)}</p>
+                    <p className="text-sm text-gray-500 mt-1">{formatNumber(systemStats.activeUsers)} usuários ativos</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <Building2 className="w-6 h-6 text-green-600" />
@@ -227,8 +228,8 @@ const AdminDashboardPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Usuários Totais</p>
-                    <p className="text-2xl font-bold text-gray-900">{systemStats.totalUsers}</p>
-                    <p className="text-sm text-gray-500 mt-1">{systemStats.activeUsers} ativos hoje</p>
+                    <p className="text-2xl font-bold text-gray-900">{formatNumber(systemStats.totalUsers)}</p>
+                    <p className="text-sm text-gray-500 mt-1">{formatNumber(systemStats.activeUsers)} ativos hoje</p>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                     <Users className="w-6 h-6 text-purple-600" />
@@ -242,7 +243,7 @@ const AdminDashboardPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Categorias</p>
-                    <p className="text-2xl font-bold text-gray-900">{systemStats.totalCategories}</p>
+                    <p className="text-2xl font-bold text-gray-900">{formatNumber(systemStats.totalCategories)}</p>
                     <p className="text-sm text-gray-500 mt-1">{systemStats.storageUsed} utilizados</p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">

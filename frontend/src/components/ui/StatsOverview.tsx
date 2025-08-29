@@ -13,6 +13,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatNumber } from '@/lib/formatters';
 import { useGlobalStats } from '@/hooks/useStats';
 
 interface StatCardProps {
@@ -145,7 +146,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
           <>
             <StatCard
               title="Total de Documentos"
-              value={stats.resumo.totalDocumentos.toLocaleString()}
+              value={formatNumber(stats.resumo.totalDocumentos)}
               description={`${stats.resumo.documentosAtivos} ativos, ${stats.resumo.documentosArquivados} arquivados`}
               icon={<FileText className="w-4 h-4" />}
               color="blue"
