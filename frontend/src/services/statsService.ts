@@ -1,3 +1,4 @@
+
 import { apiGet } from '@/lib/api';
 
 export interface GlobalStats {
@@ -162,6 +163,11 @@ const statsService = {
     return await apiGet<SingleDepartmentStats>(`/stats/departamentos/${departmentId}`);
   },
 
+  // Estatísticas do próprio departamento do usuário autenticado
+  async getMyDepartmentStats(): Promise<SingleDepartmentStats> {
+    return await apiGet<SingleDepartmentStats>('/stats/meu-departamento');
+  },
+  
   // Estatísticas de usuários
   async getUserStats(): Promise<UserStats> {
     return await apiGet<UserStats>('/stats/usuarios');
