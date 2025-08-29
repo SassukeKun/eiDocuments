@@ -6,7 +6,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import FormModal from '@/components/ui/FormModal';
 import TipoForm from '@/components/forms/TipoForm';
-import { FileType, Edit, Trash2, Eye, File } from 'lucide-react';
+import { Edit, Trash2, Eye, File } from 'lucide-react';
 import { TipoDocumento } from '@/types';
 import { useTipos } from '@/hooks/useTipos';
 import { usePaginatedData } from '@/hooks/usePaginatedData';
@@ -78,28 +78,6 @@ const TiposPage = () => {
     setSelectedTipo(null);
   };
 
-  const getExtensionBadge = (extensoes: string[]) => {
-    if (!extensoes || extensoes.length === 0) return null;
-    
-    return (
-      <div className="flex flex-wrap gap-1">
-        {extensoes.slice(0, 3).map((ext, index) => (
-          <span
-            key={index}
-            className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
-          >
-            {ext}
-          </span>
-        ))}
-        {extensoes.length > 3 && (
-          <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-            +{extensoes.length - 3}
-          </span>
-        )}
-      </div>
-    );
-  };
-
   const columns: TableColumn<TipoDocumento>[] = [
     {
       key: 'codigo',
@@ -129,27 +107,6 @@ const TiposPage = () => {
           </div>
         </div>
       ),
-    },
-    {
-      key: 'extensoesPermitidas',
-      title: 'Extensões',
-      width: 'w-48',
-      render: (value) => getExtensionBadge(value),
-    },
-    {
-      key: 'tamanhoMaximo',
-      title: 'Tamanho Máximo',
-      sortable: true,
-      width: 'w-32',
-      render: (value) => {
-        if (!value) return '-';
-        const mb = value / (1024 * 1024);
-        return (
-          <span className="text-sm text-gray-600">
-            {mb < 1 ? `${(value / 1024).toFixed(1)} KB` : `${mb.toFixed(1)} MB`}
-          </span>
-        );
-      },
     },
     {
       key: 'ativo',

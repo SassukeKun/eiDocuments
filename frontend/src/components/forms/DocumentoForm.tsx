@@ -55,6 +55,14 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
 
   const isEditing = !!documento;
 
+  // Função para converter data ISO para formato YYYY-MM-DD
+  const formatDateForInput = (dateString?: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  };
+
   useEffect(() => {
     if (isOpen) {
       // Carregar dados para selects
@@ -72,8 +80,8 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
           remetente: documento.remetente || '',
           destinatario: documento.destinatario || '',
           responsavel: documento.responsavel || '',
-          dataEnvio: documento.dataEnvio || '',
-          dataRecebimento: documento.dataRecebimento || '',
+          dataEnvio: formatDateForInput(documento.dataEnvio),
+          dataRecebimento: formatDateForInput(documento.dataRecebimento),
           tags: documento.tags || [],
           status: documento.status,
           ativo: documento.ativo
@@ -258,11 +266,40 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
       setLoading(true);
       
       if (isEditing) {
-        await atualizar(documento._id, formData as UpdateDocumento);
+        // Para atualização, filtrar apenas campos permitidos e converter datas
+        const updateData: Partial<UpdateDocumento> = {
+          titulo: formData.titulo,
+          descricao: formData.descricao,
+          categoria: formData.categoria,
+          tipo: formData.tipo,
+          departamento: formData.departamento,
+          tipoMovimento: formData.tipoMovimento,
+          remetente: formData.remetente,
+          destinatario: formData.destinatario,
+          responsavel: formData.responsavel,
+          // Converter datas para formato ISO se preenchidas
+          dataEnvio: formData.dataEnvio ? new Date(formData.dataEnvio + 'T00:00:00').toISOString() : undefined,
+          dataRecebimento: formData.dataRecebimento ? new Date(formData.dataRecebimento + 'T00:00:00').toISOString() : undefined,
+          tags: formData.tags,
+          status: formData.status,
+          ativo: formData.ativo
+        };
+
+        // Remover campos undefined
+        Object.keys(updateData).forEach(key => {
+          if (updateData[key as keyof typeof updateData] === undefined) {
+            delete updateData[key as keyof typeof updateData];
+          }
+        });
+
+        await atualizar(documento._id, updateData);
       } else {
         // Para criação, precisamos incluir o arquivo
         const documentoData = {
           ...formData,
+          // Converter datas para formato ISO se preenchidas
+          dataEnvio: formData.dataEnvio ? new Date(formData.dataEnvio + 'T00:00:00').toISOString() : undefined,
+          dataRecebimento: formData.dataRecebimento ? new Date(formData.dataRecebimento + 'T00:00:00').toISOString() : undefined,
           arquivo: selectedFile!
         };
         await criar(documentoData as any);

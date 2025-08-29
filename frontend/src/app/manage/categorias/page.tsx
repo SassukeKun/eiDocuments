@@ -6,7 +6,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import FormModal from '@/components/ui/FormModal';
 import CategoriaForm from '@/components/forms/CategoriaForm';
-import { FolderOpen, Edit, Trash2, Eye, Tag } from 'lucide-react';
+import { FolderOpen, Edit, Trash2, Eye } from 'lucide-react';
 import { CategoriaDocumento } from '@/types';
 import { useCategorias } from '@/hooks/useCategorias';
 import { usePaginatedData } from '@/hooks/usePaginatedData';
@@ -78,18 +78,12 @@ const CategoriasPage = () => {
     setSelectedCategoria(null);
   };
 
-  const getColorClass = (cor: string) => {
-    const colorMap: Record<string, string> = {
-      'blue': 'bg-blue-100 text-blue-800',
-      'green': 'bg-green-100 text-green-800',
-      'yellow': 'bg-yellow-100 text-yellow-800',
-      'red': 'bg-red-100 text-red-800',
-      'purple': 'bg-purple-100 text-purple-800',
-      'pink': 'bg-pink-100 text-pink-800',
-      'indigo': 'bg-indigo-100 text-indigo-800',
-      'gray': 'bg-gray-100 text-gray-800',
+  const getColorDisplay = (cor?: string) => {
+    if (!cor) return { bg: '#6b7280', text: '#fff' }; // gray por padrão
+    return {
+      bg: cor,
+      text: '#fff' // texto branco para contraste
     };
-    return colorMap[cor] || 'bg-gray-100 text-gray-800';
   };
 
   const columns: TableColumn<CategoriaDocumento>[] = [
@@ -108,32 +102,44 @@ const CategoriasPage = () => {
       key: 'nome',
       title: 'Nome',
       sortable: true,
-      render: (value, record) => (
-        <div className="flex items-center space-x-3">
-          <div className="flex-shrink-0">
-            <div className={`w-3 h-3 rounded-full bg-${record.cor || 'gray'}-500`}></div>
+      render: (value, record) => {
+        const color = getColorDisplay(record.cor);
+        return (
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0">
+              <div 
+                className="w-3 h-3 rounded-full border border-gray-200"
+                style={{ backgroundColor: color.bg }}
+              ></div>
+            </div>
+            <div>
+              <div className="font-medium text-gray-900">{value}</div>
+              {record.descricao && (
+                <div className="text-sm text-gray-500">{record.descricao}</div>
+              )}
+            </div>
           </div>
-          <div>
-            <div className="font-medium text-gray-900">{value}</div>
-            {record.descricao && (
-              <div className="text-sm text-gray-500">{record.descricao}</div>
-            )}
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'cor',
       title: 'Cor',
       width: 'w-20',
-      render: (value) => (
-        <span
-          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getColorClass(value)}`}
-        >
-          <Tag className="w-3 h-3 mr-1" />
-          {value}
-        </span>
-      ),
+      render: (value) => {
+        const color = getColorDisplay(value);
+        return (
+          <div className="flex items-center space-x-2">
+            <div 
+              className="w-4 h-4 rounded-full border border-gray-200"
+              style={{ backgroundColor: color.bg }}
+            ></div>
+            <span className="text-xs text-gray-600 font-mono">
+              {value || '#6b7280'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'ativo',
