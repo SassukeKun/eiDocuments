@@ -2,28 +2,25 @@
 
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 const DashboardPage = () => {
   const router = useRouter();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    // TODO: Implementar lógica de autenticação para determinar o role do usuário
-    // Por enquanto, simular verificação de role
-    const userRole = getUserRole(); // Função que deve ser implementada
-    
-    if (userRole === 'admin' || userRole === 'editor') {
-      router.push('/dashboard/admin');
-    } else {
-      router.push('/dashboard/user');
+    if (!loading && user) {
+      // Redirecionar baseado nos roles do usuário
+      if (user.roles.includes('admin') || user.roles.includes('editor')) {
+        router.push('/dashboard/admin');
+      } else {
+        router.push('/dashboard/user');
+      }
+    } else if (!loading && !user) {
+      // Se não autenticado, redirecionar para login
+      router.push('/login');
     }
-  }, [router]);
-
-  // TODO: Implementar função real de verificação de role
-  const getUserRole = (): string => {
-    // Simular - em produção, obter do contexto de autenticação ou token
-    // Por enquanto, retornar admin para teste
-    return 'admin'; // Alterar para 'user' para testar dashboard de usuário
-  };
+  }, [router, user, loading]);
 
   // Loading state enquanto redireciona
   return (
