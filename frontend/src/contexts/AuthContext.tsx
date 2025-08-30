@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService, User } from '@/services/authService';
-import { useToasts } from '@/hooks/useToasts';
 
 interface AuthContextType {
   user: User | null;
@@ -32,7 +31,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { addToast } = useToasts();
 
   // Verificar se o usuário está autenticado ao carregar
   useEffect(() => {
@@ -56,13 +54,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await authService.login({ username, senha });
       setUser(response.data.usuario);
       
-      addToast('success', 'Login realizado com sucesso!');
-
       // Redirecionar baseado no role
       const dashboardPath = authService.getDashboardPath(response.data.usuario);
       router.push(dashboardPath);
     } catch (error: any) {
-      addToast('error', 'Erro ao realizar login', error.message);
+      console.error('Login error:', error);
+      
+      // Retornar o erro para que a página de login possa lidar com ele
       throw error;
     } finally {
       setLoading(false);
@@ -73,10 +71,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await authService.logout();
       setUser(null);
-      addToast('success', 'Logout realizado com sucesso');
       router.push('/login');
     } catch (error: any) {
-      addToast('error', 'Erro ao realizar logout', error.message);
+      console.error('Logout error:', error);
     }
   };
 

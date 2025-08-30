@@ -93,8 +93,9 @@ const AdminDashboardPage = () => {
   };
 
   // Calculamos crescimento baseado nos dados da API
-  const documentsGrowth = globalStats?.data 
-    ? calculateGrowth(globalStats.data.tendencias.crescimentoSemanal, globalStats.data.tendencias.crescimentoSemanal * 0.8)
+  const crescimentoSemanal = globalStats?.data?.tendencias?.crescimentoSemanal || 0;
+  const documentsGrowth = crescimentoSemanal > 0 
+    ? calculateGrowth(crescimentoSemanal, crescimentoSemanal * 0.8)
     : 0;
 
   const handleViewDocument = (doc: Document) => {
@@ -126,6 +127,30 @@ const AdminDashboardPage = () => {
   return (
     <ManageLayout>
       <div>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-2 text-gray-600">Carregando estatísticas...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <div className="w-5 h-5 text-red-500 mr-2">⚠️</div>
+              <div>
+                <h3 className="text-red-800 font-medium">Erro ao carregar estatísticas</h3>
+                <p className="text-red-600 text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content - só renderiza se não está loading e não há error */}
+        {!loading && !error && (
+          <>
         {/* Header com Título e Botão de Atualizar */}
         <div className="mb-8">
           <div className="flex justify-between items-center">
@@ -169,7 +194,7 @@ const AdminDashboardPage = () => {
                   <p className="text-2xl font-bold text-red-500">--</p>
                 ) : (
                   <p className="text-2xl font-bold text-gray-900">
-                    {formatNumber(globalStats?.data?.resumo.totalDocumentos || 0)}
+                    {formatNumber(globalStats?.data?.resumo?.totalDocumentos || 0)}
                   </p>
                 )}
                 <div className="flex items-center mt-1">
@@ -197,11 +222,11 @@ const AdminDashboardPage = () => {
                     <p className="text-2xl font-bold text-red-500">--</p>
                   ) : (
                     <p className="text-2xl font-bold text-gray-900">
-                      {formatNumber(globalStats?.data?.resumo.totalDepartamentos || 0)}
+                      {formatNumber(globalStats?.data?.resumo?.totalDepartamentos || 0)}
                     </p>
                   )}
                   <p className="text-sm text-gray-500 mt-1">
-                    {formatNumber(globalStats?.data?.resumo.totalUsuarios || 0)} usuários ativos
+                    {formatNumber(globalStats?.data?.resumo?.totalUsuarios || 0)} usuários ativos
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -223,7 +248,7 @@ const AdminDashboardPage = () => {
                     <p className="text-2xl font-bold text-red-500">--</p>
                   ) : (
                     <p className="text-2xl font-bold text-gray-900">
-                      {formatNumber(globalStats?.data?.resumo.totalUsuarios || 0)}
+                      {formatNumber(globalStats?.data?.resumo?.totalUsuarios || 0)}
                     </p>
                   )}
                   <p className="text-sm text-gray-500 mt-1">Sistema ativo</p>
@@ -247,11 +272,11 @@ const AdminDashboardPage = () => {
                     <p className="text-2xl font-bold text-red-500">--</p>
                   ) : (
                     <p className="text-2xl font-bold text-gray-900">
-                      {formatNumber(globalStats?.data?.resumo.totalCategorias || 0)}
+                      {formatNumber(globalStats?.data?.resumo?.totalCategorias || 0)}
                     </p>
                   )}
                   <p className="text-sm text-gray-500 mt-1">
-                    {formatNumber(globalStats?.data?.resumo.totalTipos || 0)} tipos disponíveis
+                    {formatNumber(globalStats?.data?.resumo?.totalTipos || 0)} tipos disponíveis
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -281,13 +306,13 @@ const AdminDashboardPage = () => {
                 <div className="flex items-center space-x-3">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span className="text-sm text-gray-700">
-                    {formatNumber(globalStats?.data?.tendencias.crescimentoSemanal || 0)} novos documentos esta semana
+                    {formatNumber(globalStats?.data?.tendencias?.crescimentoSemanal || 0)} novos documentos esta semana
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <span className="text-sm text-gray-700">
-                    Taxa de documentos ativos: {globalStats?.data?.tendencias.taxaAtivos || '0'}%
+                    Taxa de documentos ativos: {globalStats?.data?.tendencias?.taxaAtivos || '0'}%
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -318,25 +343,25 @@ const AdminDashboardPage = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Documentos Ativos</span>
                   <span className="text-sm font-medium text-green-600">
-                    {formatNumber(globalStats?.data?.resumo.documentosAtivos || 0)}
+                    {formatNumber(globalStats?.data?.resumo?.documentosAtivos || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Documentos Arquivados</span>
                   <span className="text-sm font-medium text-gray-600">
-                    {formatNumber(globalStats?.data?.resumo.documentosArquivados || 0)}
+                    {formatNumber(globalStats?.data?.resumo?.documentosArquivados || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Crescimento Semanal</span>
                   <span className="text-sm font-medium text-blue-600">
-                    +{formatNumber(globalStats?.data?.tendencias.crescimentoSemanal || 0)}
+                    +{formatNumber(globalStats?.data?.tendencias?.crescimentoSemanal || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Taxa de Atividade</span>
                   <span className="text-sm font-medium text-purple-600">
-                    {globalStats?.data?.tendencias.taxaAtivos || '0'}%
+                    {globalStats?.data?.tendencias?.taxaAtivos || '0'}%
                   </span>
                 </div>
               </div>
@@ -379,6 +404,8 @@ const AdminDashboardPage = () => {
             </div>
           </div>
         </div>
+          </>
+        )}
       </div>
     </ManageLayout>
   );

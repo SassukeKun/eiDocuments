@@ -1,5 +1,5 @@
 
-import { apiGet } from '@/lib/api';
+import { apiGet, ApiResponse } from '@/lib/api';
 
 export interface GlobalStats {
   resumo: {
@@ -145,42 +145,50 @@ export interface TypeStats {
 const statsService = {
   // Estatísticas globais para dashboard
   async getGlobalStats(): Promise<GlobalStats> {
-    return await apiGet<GlobalStats>('/stats/global');
+    const response = await apiGet<ApiResponse<GlobalStats>>('/stats/global');
+    return response.data;
   },
 
   // Estatísticas de documentos
   async getDocumentStats(): Promise<DocumentStats> {
-    return await apiGet<DocumentStats>('/stats/documentos');
+    const response = await apiGet<ApiResponse<DocumentStats>>('/stats/documentos');
+    return response.data;
   },
 
   // Estatísticas gerais de departamentos
   async getDepartmentStats(): Promise<DepartmentStats> {
-    return await apiGet<DepartmentStats>('/stats/departamentos');
+    const response = await apiGet<ApiResponse<DepartmentStats>>('/stats/departamentos');
+    return response.data;
   },
 
   // Estatísticas de um departamento específico
   async getSingleDepartmentStats(departmentId: string): Promise<SingleDepartmentStats> {
-    return await apiGet<SingleDepartmentStats>(`/stats/departamentos/${departmentId}`);
+    const response = await apiGet<ApiResponse<SingleDepartmentStats>>(`/stats/departamentos/${departmentId}`);
+    return response.data;
   },
 
   // Estatísticas do próprio departamento do usuário autenticado
   async getMyDepartmentStats(): Promise<SingleDepartmentStats> {
-    return await apiGet<SingleDepartmentStats>('/stats/meu-departamento');
+    const response = await apiGet<ApiResponse<SingleDepartmentStats>>('/stats/meu-departamento');
+    return response.data;
   },
   
   // Estatísticas de usuários
   async getUserStats(): Promise<UserStats> {
-    return await apiGet<UserStats>('/stats/usuarios');
+    const response = await apiGet<ApiResponse<UserStats>>('/stats/usuarios');
+    return response.data;
   },
 
   // Estatísticas de categorias
   async getCategoryStats(): Promise<CategoryStats> {
-    return await apiGet<CategoryStats>('/stats/categorias');
+    const response = await apiGet<ApiResponse<CategoryStats>>('/stats/categorias');
+    return response.data;
   },
 
   // Estatísticas de tipos
   async getTypeStats(): Promise<TypeStats> {
-    return await apiGet<TypeStats>('/stats/tipos');
+    const response = await apiGet<ApiResponse<TypeStats>>('/stats/tipos');
+    return response.data;
   }
 };
 
