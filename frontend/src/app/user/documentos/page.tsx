@@ -181,9 +181,9 @@ const DocumentosDepartamentoPage = () => {
               <div className="text-sm text-gray-500 truncate">{record.descricao}</div>
             )}
             <div className="text-xs text-gray-400 mt-1 flex items-center space-x-2">
-              <span>{record.arquivo?.nomeOriginal || 'Arquivo não encontrado'}</span>
+              <span>{record.arquivo?.originalName || 'Arquivo não encontrado'}</span>
               <span>•</span>
-              <span>{formatFileSize(record.arquivo?.tamanho || 0)}</span>
+              <span>{formatFileSize(record.arquivo?.size || 0)}</span>
             </div>
           </div>
         </div>

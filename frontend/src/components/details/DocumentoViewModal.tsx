@@ -183,10 +183,10 @@ const DocumentoViewModal: React.FC<DocumentoViewModalProps> = ({
                 <h3 className="text-sm font-medium text-gray-900 mb-2">Arquivo</h3>
                 <div className="p-3 bg-gray-50 rounded-lg space-y-2">
                   <div className="text-sm font-medium text-gray-900">
-                    {documento.arquivo?.nomeOriginal || 'Arquivo não encontrado'}
+                    {documento.arquivo?.originalName || 'Arquivo não encontrado'}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {formatFileSize(documento.arquivo?.tamanho || 0)}
+                    {formatFileSize(documento.arquivo?.size || 0)}
                   </div>
                   <div className="text-xs text-gray-500">
                     {documento.arquivo?.tipoMime || 'Tipo não identificado'}
