@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useToasts } from './useToasts';
 import statsService, {
   GlobalStats,
   DocumentStats,
@@ -25,7 +24,6 @@ function useStatsQuery<T>(
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { addToast } = useToasts();
 
   const fetchData = async () => {
     try {
@@ -36,12 +34,6 @@ function useStatsQuery<T>(
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar estatísticas';
       setError(errorMessage);
-      addToast(
-        'error',
-        'Erro nas Estatísticas',
-        errorMessage,
-        { duration: 5000 }
-      );
     } finally {
       setLoading(false);
     }

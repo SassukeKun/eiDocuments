@@ -1,4 +1,5 @@
-import { apiGet } from '@/lib/api';
+
+import { apiGet, ApiResponse } from '@/lib/api';
 
 export interface StatsGlobal {
   resumo: {
@@ -22,30 +23,7 @@ export interface StatsGlobal {
   };
 }
 
-export interface StatsDepartamento {
-  departamento: {
-    _id: string;
-    nome: string;
-    codigo: string;
-  };
-  documentos: {
-    total: number;
-    ativos: number;
-    arquivados: number;
-    porCategoria: Array<{ categoria: string; quantidade: number }>;
-    porTipo: Array<{ tipo: string; quantidade: number }>;
-    recentes: Array<{
-      _id: string;
-      titulo: string;
-      categoria: { nome: string };
-      tipo: { nome: string };
-      usuario: { nome: string };
-      dataCriacao: string;
-    }>;
-  };
-}
-
-export interface StatsDocumentos {
+export interface DocumentStats {
   totais: {
     total: number;
     ativos: number;
@@ -60,10 +38,10 @@ export interface StatsDocumentos {
   recentes: Array<{
     _id: string;
     titulo: string;
+    dataCriacao: string;
     departamento: { nome: string };
     categoria: { nome: string };
     tipo: { nome: string };
-    dataCriacao: string;
   }>;
   tendencias: {
     porMes: Array<{
@@ -73,76 +51,145 @@ export interface StatsDocumentos {
   };
 }
 
-export class StatsService {
-  /**
-   * Obter estatísticas globais (dashboard admin)
-   */
-  static async getGlobalStats(): Promise<StatsGlobal> {
-    console.log('📊 Carregando estatísticas globais...');
-    const response = await apiGet<StatsGlobal>('/stats/global');
-    console.log('📊 Estatísticas globais carregadas:', response);
-    return response;
-  }
-
-  /**
-   * Obter estatísticas do departamento do usuário logado
-   */
-  static async getMyDepartmentStats(): Promise<StatsDepartamento> {
-    console.log('📊 Carregando estatísticas do meu departamento...');
-    const response = await apiGet<StatsDepartamento>('/stats/meu-departamento');
-    console.log('📊 Estatísticas do departamento carregadas:', response);
-    return response;
-  }
-
-  /**
-   * Obter estatísticas de documentos
-   */
-  static async getDocumentStats(): Promise<StatsDocumentos> {
-    console.log('📊 Carregando estatísticas de documentos...');
-    const response = await apiGet<StatsDocumentos>('/stats/documentos');
-    console.log('📊 Estatísticas de documentos carregadas:', response);
-    return response;
-  }
-
-  /**
-   * Obter estatísticas de um departamento específico
-   */
-  static async getSingleDepartmentStats(departmentId: string): Promise<StatsDepartamento> {
-    console.log('📊 Carregando estatísticas do departamento:', departmentId);
-    const response = await apiGet<StatsDepartamento>(`/stats/departamentos/${departmentId}`);
-    console.log('📊 Estatísticas do departamento carregadas:', response);
-    return response;
-  }
-
-  /**
-   * Obter estatísticas de usuários
-   */
-  static async getUserStats(): Promise<any> {
-    console.log('📊 Carregando estatísticas de usuários...');
-    const response = await apiGet<any>('/stats/usuarios');
-    console.log('📊 Estatísticas de usuários carregadas:', response);
-    return response;
-  }
-
-  /**
-   * Obter estatísticas de categorias
-   */
-  static async getCategoryStats(): Promise<any> {
-    console.log('📊 Carregando estatísticas de categorias...');
-    const response = await apiGet<any>('/stats/categorias');
-    console.log('📊 Estatísticas de categorias carregadas:', response);
-    return response;
-  }
-
-  /**
-   * Obter estatísticas de tipos
-   */
-  static async getTypeStats(): Promise<any> {
-    console.log('📊 Carregando estatísticas de tipos...');
-    const response = await apiGet<any>('/stats/tipos');
-    console.log('📊 Estatísticas de tipos carregadas:', response);
-    return response;
-  }
+export interface DepartmentStats {
+  totais: {
+    total: number;
+    ativos: number;
+    inativos: number;
+  };
+  distribuicoes: {
+    categorias: Array<{ departamento: string; quantidade: number }>;
+    usuarios: Array<{ departamento: string; quantidade: number }>;
+    documentos: Array<{ departamento: string; quantidade: number }>;
+  };
 }
 
-export default StatsService;
+export interface SingleDepartmentStats {
+  departamento: {
+    _id: string;
+    nome: string;
+    codigo: string;
+  };
+  documentos: {
+    total: number;
+    ativos: number;
+    arquivados: number;
+    porCategoria: Array<{ categoria: string; quantidade: number }>;
+    porTipo: Array<{ tipo: string; quantidade: number }>;
+    recentes: Array<{
+      _id: string;
+      titulo: string;
+      dataCriacao: string;
+      categoria: { nome: string };
+      tipo: { nome: string };
+      usuario: { nome: string };
+    }>;
+  };
+}
+
+export interface UserStats {
+  totais: {
+    total: number;
+    ativos: number;
+    inativos: number;
+  };
+  distribuicoes: {
+    porRole: Array<{ role: string; quantidade: number }>;
+    porDepartamento: Array<{ departamento: string; quantidade: number }>;
+    atividadeDocumental: Array<{ usuario: string; quantidade: number }>;
+  };
+  recentes: Array<{
+    _id: string;
+    nome: string;
+    email: string;
+    dataCriacao: string;
+    departamento: { nome: string };
+  }>;
+}
+
+export interface CategoryStats {
+  totais: {
+    total: number;
+    ativas: number;
+    inativas: number;
+  };
+  distribuicoes: {
+    porDepartamento: Array<{ departamento: string; quantidade: number }>;
+    usoPorCategoria: Array<{ categoria: string; quantidade: number }>;
+  };
+  recentes: Array<{
+    _id: string;
+    nome: string;
+    dataCriacao: string;
+    departamento: { nome: string };
+  }>;
+}
+
+export interface TypeStats {
+  totais: {
+    total: number;
+    ativos: number;
+    inativos: number;
+  };
+  distribuicoes: {
+    usoPorTipo: Array<{ tipo: string; quantidade: number }>;
+    maisUsados: Array<{ nome: string; quantidade: number }>;
+  };
+  recentes: Array<{
+    _id: string;
+    nome: string;
+    dataCriacao: string;
+  }>;
+}
+
+const statsService = {
+  // Estatísticas globais para dashboard
+  async getGlobalStats(): Promise<GlobalStats> {
+    const response = await apiGet<ApiResponse<GlobalStats>>('/stats/global');
+    return response.data;
+  },
+
+  // Estatísticas de documentos
+  async getDocumentStats(): Promise<DocumentStats> {
+    const response = await apiGet<ApiResponse<DocumentStats>>('/stats/documentos');
+    return response.data;
+  },
+
+  // Estatísticas gerais de departamentos
+  async getDepartmentStats(): Promise<DepartmentStats> {
+    const response = await apiGet<ApiResponse<DepartmentStats>>('/stats/departamentos');
+    return response.data;
+  },
+
+  // Estatísticas de um departamento específico
+  async getSingleDepartmentStats(departmentId: string): Promise<SingleDepartmentStats> {
+    const response = await apiGet<ApiResponse<SingleDepartmentStats>>(`/stats/departamentos/${departmentId}`);
+    return response.data;
+  },
+
+  // Estatísticas do próprio departamento do usuário autenticado
+  async getMyDepartmentStats(): Promise<SingleDepartmentStats> {
+    const response = await apiGet<ApiResponse<SingleDepartmentStats>>('/stats/meu-departamento');
+    return response.data;
+  },
+  
+  // Estatísticas de usuários
+  async getUserStats(): Promise<UserStats> {
+    const response = await apiGet<ApiResponse<UserStats>>('/stats/usuarios');
+    return response.data;
+  },
+
+  // Estatísticas de categorias
+  async getCategoryStats(): Promise<CategoryStats> {
+    const response = await apiGet<ApiResponse<CategoryStats>>('/stats/categorias');
+    return response.data;
+  },
+
+  // Estatísticas de tipos
+  async getTypeStats(): Promise<TypeStats> {
+    const response = await apiGet<ApiResponse<TypeStats>>('/stats/tipos');
+    return response.data;
+  }
+};
+
+export default statsService;

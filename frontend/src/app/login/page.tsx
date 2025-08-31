@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToastContext } from "@/contexts/ToastContext";
 import { useRouter } from "next/navigation";
 
 const LoginPage = () => {
@@ -10,6 +11,7 @@ const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [senha, setSenha] = useState("");
   const { login, loading, user } = useAuth();
+  const { addToast } = useToastContext();
   const router = useRouter();
 
   // Redirecionar se já autenticado
@@ -23,13 +25,57 @@ const LoginPage = () => {
     e.preventDefault();
     
     if (!username.trim() || !senha.trim()) {
+      addToast('warning', 'Campos obrigatórios', 'Por favor, preencha username e senha.');
       return;
     }
 
     try {
       await login(username, senha);
-    } catch (error) {
-      // Error é tratado automaticamente no AuthContext via toast
+      addToast('success', 'Login realizado com sucesso!');
+    } catch (error: any) {
+      // Determinar tipo de erro e exibir toast apropriado
+      let errorTitle = 'Erro ao realizar login';
+      let errorMessage = '';
+      
+      if (error && error.message) {
+        // Verificar se é erro de rede
+        if (error.message.includes('Failed to fetch') || 
+            error.message.includes('NetworkError') || 
+            error.message.includes('Erro de conexão') ||
+            error.message.includes('fetch')) {
+          errorTitle = 'Erro de conexão';
+          errorMessage = 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.';
+        }
+        // Verificar se é erro de timeout
+        else if (error.message.includes('Tempo limite') || 
+                 error.message.includes('timeout') ||
+                 error.message.includes('TimeoutError')) {
+          errorTitle = 'Tempo limite esgotado';
+          errorMessage = 'A conexão com o servidor demorou muito para responder. Tente novamente.';
+        }
+        // Verificar se é erro de credenciais (incluindo quando servidor retorna 500 para credenciais inválidas)
+        else if (error.message.includes('Credenciais inválidas') || 
+                 error.message.includes('Invalid credentials') ||
+                 error.message.includes('401') ||
+                 error.message.includes('Unauthorized')) {
+          errorTitle = 'Credenciais inválidas';
+          errorMessage = 'Nome de usuário ou senha incorretos.';
+        }
+        // Verificar se é erro do servidor
+        else if (error.message.includes('500') || 
+                 error.message.includes('Internal Server Error')) {
+          errorTitle = 'Erro do servidor';
+          errorMessage = 'Ocorreu um erro interno no servidor. Tente novamente mais tarde.';
+        }
+        // Outros erros específicos
+        else {
+          errorMessage = error.message;
+        }
+      } else {
+        errorMessage = 'Ocorreu um erro inesperado. Tente novamente.';
+      }
+      
+      addToast('error', errorTitle, errorMessage);
     }
   };
 
