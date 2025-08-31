@@ -4,12 +4,19 @@ import React, { useState, useEffect } from 'react';
 import UserLayout from '@/components/ui/UserLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
-import { FileText, Eye, Download, Building2, FolderOpen, Tag, Calendar, User } from 'lucide-react';
+import { FileText, Eye, Download, Building2, FolderOpen, Tag, Calendar, User, Edit } from 'lucide-react';
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
+import { useAuth } from '@/hooks/useAuth';
+import DocumentoViewModal from '@/components/details/DocumentoViewModal';
+import DocumentoEditModal from '@/components/forms/DocumentoEditModal';
 
 const DocumentosDepartamentoPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDocumento, setSelectedDocumento] = useState<Documento | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { user } = useAuth();
   
   const {
     documentos,
@@ -21,18 +28,23 @@ const DocumentosDepartamentoPage = () => {
   } = useDocumentos();
 
   useEffect(() => {
-    // TODO: Obter departamento do usuário logado e filtrar documentos
-    // Por enquanto, carrega todos os documentos
-    carregar();
-  }, [carregar]);
+    // Carregar documentos do departamento do usuário logado
+    if (user?.departamento?._id) {
+      buscarPorDepartamento(user.departamento._id);
+    }
+  }, [user, buscarPorDepartamento]);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      carregar();
+    if (!query.trim() && user?.departamento?._id) {
+      // Se não há busca, volta a mostrar documentos do departamento
+      buscarPorDepartamento(user.departamento._id);
       return;
     }
-    buscarPorTexto(query);
+    // Busca por texto mas ainda filtrando pelo departamento
+    if (user?.departamento?._id) {
+      buscarPorDepartamento(user.departamento._id, { q: query });
+    }
   };
 
   const handleDownload = async (documento: Documento) => {
@@ -44,8 +56,29 @@ const DocumentosDepartamentoPage = () => {
   };
 
   const handleView = (documento: Documento) => {
-    // TODO: Implementar visualização de documento
-    console.log('Visualizar documento:', documento);
+    setSelectedDocumento(documento);
+    setIsViewModalOpen(true);
+  };
+
+  const handleEdit = (documento: Documento) => {
+    setSelectedDocumento(documento);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (documento: Documento, formData: any) => {
+    try {
+      console.log('Salvando edições do documento:', documento._id, formData);
+      // TODO: Implementar atualização no serviço
+      alert('Funcionalidade de edição será implementada em breve!');
+      
+      // Recarregar documentos do departamento
+      if (user?.departamento?._id) {
+        buscarPorDepartamento(user.departamento._id);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar documento:', error);
+      throw error;
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -205,14 +238,20 @@ const DocumentosDepartamentoPage = () => {
       icon: <Eye className="w-4 h-4" />,
       onClick: handleView,
     },
+    {
+      key: 'edit',
+      label: 'Editar',
+      icon: <Edit className="w-4 h-4" />,
+      onClick: handleEdit,
+    },
   ];
 
   return (
     <UserLayout>
       <div>
         <PageHeader
-          title="Documentos do Departamento"
-          subtitle="Acesse e visualize documentos do seu departamento"
+          title={`Documentos ${user?.departamento?.nome ? `- ${user.departamento.nome}` : 'do Departamento'}`}
+          subtitle={`Acesse e visualize documentos ${user?.departamento?.nome ? `do departamento ${user.departamento.nome}` : 'do seu departamento'}`}
           onSearch={handleSearch}
           onFilter={() => console.log('Filtrar documentos')}
           searchPlaceholder="Pesquisar documentos..."
@@ -229,6 +268,28 @@ const DocumentosDepartamentoPage = () => {
           onSort={(column, direction) => {
             console.log('Ordenar por:', column, direction);
           }}
+        />
+
+        {/* Modais */}
+        <DocumentoViewModal
+          documento={selectedDocumento}
+          isOpen={isViewModalOpen}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setSelectedDocumento(null);
+          }}
+          onEdit={handleEdit}
+          onDownload={handleDownload}
+        />
+
+        <DocumentoEditModal
+          documento={selectedDocumento}
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedDocumento(null);
+          }}
+          onSave={handleSaveEdit}
         />
       </div>
     </UserLayout>

@@ -41,8 +41,8 @@ class AuthService {
   }
 
   async getCurrentUser(): Promise<User> {
-    const response = await apiGet<{ success: boolean; data: { usuario: User } }>('/auth/me');
-    return response.data.usuario;
+    const response = await apiGet<{ success: boolean; data: User }>('/auth/me');
+    return response.data;
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {

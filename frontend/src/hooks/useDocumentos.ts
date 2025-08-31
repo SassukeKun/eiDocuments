@@ -117,6 +117,78 @@ export const useDocumentos = () => {
     }
   }, [showError]);
 
+  // Buscar por departamento
+  const buscarPorDepartamento = useCallback(async (departamentoId: string, params?: DocumentoQueryParams) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.buscarPorDepartamento(departamentoId, params);
+      setDocumentos(response.data);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar documentos do departamento';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
+  // Buscar por usuário
+  const buscarPorUsuario = useCallback(async (usuarioId: string, params?: DocumentoQueryParams) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.buscarPorUsuario(usuarioId, params);
+      setDocumentos(response.data);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar documentos do usuário';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
+  // Buscar por categoria
+  const buscarPorCategoria = useCallback(async (categoriaId: string, params?: DocumentoQueryParams) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.buscarPorCategoria(categoriaId, params);
+      setDocumentos(response.data);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar documentos da categoria';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
+  // Buscar por tipo
+  const buscarPorTipo = useCallback(async (tipoId: string, params?: DocumentoQueryParams) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await DocumentosService.buscarPorTipo(tipoId, params);
+      setDocumentos(response.data);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar documentos do tipo';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
   // Download de documento
   const baixar = useCallback(async (id: string) => {
     try {
@@ -228,6 +300,10 @@ export const useDocumentos = () => {
     atualizar,
     remover,
     buscarPorTexto,
+    buscarPorDepartamento,
+    buscarPorUsuario,
+    buscarPorCategoria,
+    buscarPorTipo,
     baixar,
     atualizarStatus,
     buscarComFiltros,

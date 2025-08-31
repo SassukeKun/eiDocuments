@@ -7,10 +7,17 @@ import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import { FileText, Edit, Trash2, Eye, Download, Building2, FolderOpen, Tag, Calendar, User, Plus } from 'lucide-react';
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
+import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
+import DocumentoViewModal from '@/components/details/DocumentoViewModal';
+import DocumentoEditModal from '@/components/forms/DocumentoEditModal';
 
 const MeusDocumentosPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDocumento, setSelectedDocumento] = useState<Documento | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { user } = useAuth();
   
   const {
     documentos,
@@ -23,18 +30,23 @@ const MeusDocumentosPage = () => {
   } = useDocumentos();
 
   useEffect(() => {
-    // TODO: Obter ID do usuário logado e filtrar seus documentos
-    // Por enquanto, carrega todos os documentos
-    carregar();
-  }, [carregar]);
+    // Carregar documentos do usuário logado
+    if (user?._id) {
+      buscarPorUsuario(user._id);
+    }
+  }, [user, buscarPorUsuario]);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      carregar();
+    if (!query.trim() && user?._id) {
+      // Se não há busca, volta a mostrar documentos do usuário
+      buscarPorUsuario(user._id);
       return;
     }
-    buscarPorTexto(query);
+    // Busca por texto mas ainda filtrando pelos documentos do usuário
+    if (user?._id) {
+      buscarPorUsuario(user._id, { q: query });
+    }
   };
 
   const handleDelete = async (documento: Documento) => {
@@ -44,7 +56,10 @@ const MeusDocumentosPage = () => {
 
     try {
       await remover(documento._id);
-      carregar(); // Recarregar lista
+      // Recarregar lista de documentos do usuário
+      if (user?._id) {
+        buscarPorUsuario(user._id);
+      }
     } catch (err) {
       console.error('Erro ao excluir documento:', err);
     }
@@ -59,13 +74,30 @@ const MeusDocumentosPage = () => {
   };
 
   const handleEdit = (documento: Documento) => {
-    // TODO: Implementar edição de documento
-    console.log('Editar documento:', documento);
+    setSelectedDocumento(documento);
+    setIsEditModalOpen(true);
   };
 
   const handleView = (documento: Documento) => {
-    // TODO: Implementar visualização de documento
-    console.log('Visualizar documento:', documento);
+    setSelectedDocumento(documento);
+    setIsViewModalOpen(true);
+  };
+
+  const handleSaveEdit = async (documento: Documento, formData: any) => {
+    try {
+      console.log('Salvando edições do documento:', documento._id, formData);
+      // TODO: Implementar atualização no serviço
+      // await DocumentosService.atualizar(documento._id, formData);
+      alert('Funcionalidade de edição será implementada em breve!');
+      
+      // Recarregar documentos do usuário
+      if (user?._id) {
+        buscarPorUsuario(user._id);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar documento:', error);
+      throw error;
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -256,7 +288,7 @@ const MeusDocumentosPage = () => {
           onFilter={() => console.log('Filtrar meus documentos')}
           searchPlaceholder="Pesquisar nos meus documentos..."
           addButtonText="Novo Documento"
-          onAdd={() => window.location.href = '/upload'}
+          onAdd={() => window.location.href = '/user/upload'}
           showExportButton={true}
           onExport={() => console.log('Exportar meus documentos')}
         />
@@ -287,6 +319,28 @@ const MeusDocumentosPage = () => {
           onSort={(column, direction) => {
             console.log('Ordenar por:', column, direction);
           }}
+        />
+
+        {/* Modais */}
+        <DocumentoViewModal
+          documento={selectedDocumento}
+          isOpen={isViewModalOpen}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setSelectedDocumento(null);
+          }}
+          onEdit={handleEdit}
+          onDownload={handleDownload}
+        />
+
+        <DocumentoEditModal
+          documento={selectedDocumento}
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedDocumento(null);
+          }}
+          onSave={handleSaveEdit}
         />
       </div>
     </UserLayout>

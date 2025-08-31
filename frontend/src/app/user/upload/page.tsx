@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { 
   Upload, 
   FileText, 
@@ -21,6 +21,8 @@ import UserLayout from "@/components/ui/UserLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToastContext } from "@/contexts/ToastContext";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { UploadService } from "@/services/uploadService";
 
 interface UploadFile {
   id: string;
@@ -29,7 +31,7 @@ interface UploadFile {
   size: number;
   type: string;
   preview?: string;
-  status: 'uploading' | 'success' | 'error';
+  status: 'ready' | 'uploading' | 'success' | 'error';
   progress: number;
 }
 
@@ -37,6 +39,7 @@ interface DocumentForm {
   titulo: string;
   descricao: string;
   categoria: string;
+  tipo: string;
   tipoMovimento: 'recebido' | 'enviado' | 'interno';
   remetente: string;
   destinatario: string;
@@ -50,9 +53,9 @@ interface DocumentForm {
 const UploadPage = () => {
   const { success, error } = useToastContext();
   const router = useRouter();
+  const { user } = useAuth();
   
-  // TODO: Obter departamento do usuário logado do contexto de autenticação
-  const userDepartment = "Recursos Humanos"; // Simular departamento do usuário
+  const userDepartment = user?.departamento?.nome || "Departamento não identificado";
   
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [newTag, setNewTag] = useState("");
@@ -62,17 +65,29 @@ const UploadPage = () => {
     titulo: '',
     descricao: '',
     categoria: '',
+    tipo: '',
     tipoMovimento: 'interno',
     remetente: '',
     destinatario: '',
-    responsavel: '',
+    responsavel: user?.nome || '', // Auto-preencher com nome do usuário
     dataEnvio: '',
     dataRecebimento: '',
     tags: [],
     ativo: true
   });
 
-  // Não é mais necessário carregar departamentos pois o usuário já tem um departamento fixo
+  // Atualizar responsável quando o usuário mudar
+  useEffect(() => {
+    console.log('🔄 useEffect responsável executado');
+    console.log('👤 User:', user);
+    console.log('📋 TipoMovimento:', formData.tipoMovimento);
+    console.log('👤 Responsável atual:', formData.responsavel);
+    
+    if (user?.nome && formData.tipoMovimento === 'interno' && !formData.responsavel.trim()) {
+      console.log('✅ Atualizando responsável para:', user.nome);
+      setFormData(prev => ({ ...prev, responsavel: user.nome }));
+    }
+  }, [user, formData.tipoMovimento, formData.responsavel]);
 
   const allowedFileTypes = [
     'application/pdf',
@@ -144,7 +159,7 @@ const UploadPage = () => {
           name: file.name,
           size: file.size,
           type: file.type,
-          status: 'uploading',
+          status: 'ready',
           progress: 0
         };
 
@@ -257,6 +272,21 @@ const UploadPage = () => {
       return;
     }
 
+    if (!formData.categoria.trim()) {
+      error("Digite uma categoria para o documento");
+      return;
+    }
+
+    if (!formData.tipo.trim()) {
+      error("Digite um tipo para o documento");
+      return;
+    }
+
+    if (!user?.departamento?._id) {
+      error("Departamento do usuário não identificado");
+      return;
+    }
+
     // Validações específicas por tipo de movimento
     if (formData.tipoMovimento === 'enviado') {
       if (!formData.destinatario?.trim()) {
@@ -286,17 +316,53 @@ const UploadPage = () => {
     setIsUploading(true);
 
     try {
-      // Simular upload com progresso
+      console.log('🚀 Iniciando upload real para o backend');
+      console.log('👤 Usuário:', user._id);
+      console.log('🏢 Departamento:', user.departamento._id);
+      
+      // Upload real para cada arquivo
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        // Simular progresso
-        for (let progress = 0; progress <= 100; progress += 10) {
-          setFiles(prev => prev.map(f => 
-            f.id === file.id ? { ...f, progress } : f
-          ));
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+        // Marcar como upload iniciado
+        setFiles(prev => prev.map(f => 
+          f.id === file.id ? { ...f, status: 'uploading' as const, progress: 20 } : f
+        ));
+
+        // Criar dados do documento para envio com criação automática de categoria/tipo
+        const uploadData = {
+          titulo: formData.titulo,
+          descricao: formData.descricao,
+          categoriaNome: formData.categoria,
+          tipoNome: formData.tipo,
+          departamento: user.departamento._id,
+          usuario: user._id,
+          tipoMovimento: formData.tipoMovimento,
+          remetente: formData.remetente,
+          destinatario: formData.destinatario,
+          responsavel: formData.responsavel,
+          dataEnvio: formData.dataEnvio,
+          dataRecebimento: formData.dataRecebimento,
+          tags: formData.tags,
+          arquivo: file.file
+        };
+
+        console.log('📝 Dados do upload:', uploadData);
+        console.log('🔍 Responsável no uploadData:', uploadData.responsavel);
+        console.log('🔍 FormData completo:', formData);
+
+        // Atualizar progresso para meio do upload
+        setFiles(prev => prev.map(f => 
+          f.id === file.id ? { ...f, progress: 60 } : f
+        ));
+
+        // Enviar para o backend com criação automática de categoria/tipo
+        await UploadService.uploadDocumento(uploadData);
+        
+        // Atualizar progresso para quase completo
+        setFiles(prev => prev.map(f => 
+          f.id === file.id ? { ...f, progress: 90 } : f
+        ));
 
         // Marcar como sucesso
         setFiles(prev => prev.map(f => 
@@ -311,6 +377,7 @@ const UploadPage = () => {
         router.push('/user/meus-documentos');
       }, 2000);
     } catch (err) {
+      console.error('❌ Erro no upload:', err);
       error("Erro durante o upload. Tente novamente.");
       setFiles(prev => prev.map(f => ({ ...f, status: 'error' as const })));
     } finally {
@@ -319,7 +386,7 @@ const UploadPage = () => {
   };
 
   const isFormValid = () => {
-    if (files.length === 0 || !formData.titulo.trim() || isUploading) {
+    if (files.length === 0 || !formData.titulo.trim() || !formData.categoria.trim() || !formData.tipo.trim() || isUploading) {
       return false;
     }
     
@@ -379,11 +446,12 @@ const UploadPage = () => {
               id="file-input"
             />
             
-            <label htmlFor="file-input">
-              <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors cursor-pointer">
-                <Plus className="w-4 h-4 mr-2" />
-                Selecionar Arquivos
-              </button>
+            <label 
+              htmlFor="file-input"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Selecionar Arquivos
             </label>
             
             <p className="text-sm text-gray-500 mt-4">
@@ -413,6 +481,13 @@ const UploadPage = () => {
                   </div>
                   
                   <div className="flex items-center space-x-3">
+                    {file.status === 'ready' && (
+                      <div className="flex items-center space-x-1 text-blue-600">
+                        <FileText className="h-4 w-4" />
+                        <span className="text-xs font-medium">Pronto</span>
+                      </div>
+                    )}
+
                     {file.status === 'uploading' && (
                       <div className="flex items-center space-x-2">
                         <div className="w-16 bg-gray-200 rounded-full h-1.5">
@@ -489,17 +564,33 @@ const UploadPage = () => {
             {/* Categoria */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoria
+                Categoria *
               </label>
-              <select
+              <input
+                type="text"
                 value={formData.categoria}
                 onChange={(e) => handleInputChange('categoria', e.target.value)}
                 className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Selecione uma categoria</option>
-                {/* TODO: Carregar categorias do departamento do usuário */}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Categorias disponíveis no seu departamento</p>
+                placeholder="Ex: Contratos, Relatórios, Correspondência..."
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Digite o tipo de categoria para este documento</p>
+            </div>
+
+            {/* Tipo */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tipo *
+              </label>
+              <input
+                type="text"
+                value={formData.tipo}
+                onChange={(e) => handleInputChange('tipo', e.target.value)}
+                className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Ex: Ofício, Memorando, Ata, Parecer..."
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Digite o tipo de documento</p>
             </div>
 
             {/* Tipo de Movimento */}
@@ -713,6 +804,8 @@ const UploadPage = () => {
                 <ul className="list-disc list-inside space-y-1">
                   {files.length === 0 && <li>Selecione pelo menos um arquivo</li>}
                   {!formData.titulo.trim() && <li>Digite um título para o documento</li>}
+                  {!formData.categoria.trim() && <li>Digite uma categoria para o documento</li>}
+                  {!formData.tipo.trim() && <li>Digite um tipo para o documento</li>}
                   {formData.tipoMovimento === 'enviado' && !formData.destinatario?.trim() && <li>Informe o destinatário</li>}
                   {formData.tipoMovimento === 'enviado' && !formData.dataEnvio && <li>Selecione a data de envio</li>}
                   {formData.tipoMovimento === 'recebido' && !formData.remetente?.trim() && <li>Informe o remetente</li>}

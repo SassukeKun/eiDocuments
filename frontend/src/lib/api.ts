@@ -12,12 +12,10 @@ export interface ApiResponse<T> {
 export interface ApiPaginatedResponse<T> {
   success: boolean;
   data: T[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  page: number;
+  limit: number;
+  total: number;
+  meta?: any;
 }
 
 export interface ApiErrorResponse {
@@ -49,7 +47,6 @@ async function apiRequest<T>(
 
   try {
     const response = await fetch(url, config);
-    console.log(`API Response: ${response.status} - ${config.method} ${url}`);
     
     if (!response.ok) {
       let errorData;

@@ -202,13 +202,6 @@ export interface PaginationInfo {
   totalPages: number;
 }
 
-export interface ApiPaginatedResponse<T> {
-  data: T[];
-  pagination: PaginationInfo;
-  success: boolean;
-  message?: string;
-}
-
 export interface BaseQueryParams {
   page?: number;
   limit?: number;

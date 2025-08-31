@@ -87,9 +87,10 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
 
   const handleRoleChange = (role: string, checked: boolean) => {
     setFormData(prev => {
+      const currentRoles = prev.roles || [];
       const newRoles = checked 
-        ? [...prev.roles, role]
-        : prev.roles.filter(r => r !== role);
+        ? [...currentRoles, role]
+        : currentRoles.filter(r => r !== role);
       
       return { ...prev, roles: newRoles };
     });
@@ -134,7 +135,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
       newErrors.departamento = 'Departamento é obrigatório';
     }
 
-    if (formData.roles.length === 0) {
+    if (!formData.roles || formData.roles.length === 0) {
       newErrors.roles = 'Pelo menos uma função deve ser selecionada';
     }
 
@@ -309,7 +310,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
             <label key={role.value} className="flex items-center">
               <input
                 type="checkbox"
-                checked={formData.roles.includes(role.value)}
+                checked={formData.roles?.includes(role.value) || false}
                 onChange={(e) => handleRoleChange(role.value, e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 disabled={loading}

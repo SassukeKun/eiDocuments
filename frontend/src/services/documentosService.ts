@@ -4,12 +4,12 @@ import {
   apiGet, 
   apiPost, 
   apiPut, 
-  apiDelete 
+  apiDelete,
+  ApiResponse,
+  ApiPaginatedResponse
 } from '@/lib/api';
 import { 
-  Documento, 
-  ApiResponse, 
-  ApiPaginatedResponse 
+  Documento
 } from '@/types';
 
 export interface DocumentoQueryParams {
@@ -33,9 +33,11 @@ export interface DocumentoCreateData {
   categoria: string;
   tipo: string;
   departamento: string;
+  usuario?: string;
   tipoMovimento: 'enviado' | 'recebido' | 'interno';
   remetente?: string;
   destinatario?: string;
+  responsavel?: string;
   dataEnvio?: string;
   dataRecebimento?: string;
   tags?: string[];
@@ -70,6 +72,9 @@ export class DocumentosService {
 
   // Criar novo documento
   static async criar(documento: DocumentoCreateData): Promise<ApiResponse<Documento>> {
+    console.log('🏗️ DocumentosService.criar chamado com:', documento);
+    console.log('👤 Responsável recebido:', documento.responsavel);
+    
     const formData = new FormData();
     
     // Adicionar dados do documento
@@ -78,9 +83,11 @@ export class DocumentosService {
     formData.append('categoria', documento.categoria);
     formData.append('tipo', documento.tipo);
     formData.append('departamento', documento.departamento);
+    if (documento.usuario) formData.append('usuario', documento.usuario);
     formData.append('tipoMovimento', documento.tipoMovimento);
     if (documento.remetente) formData.append('remetente', documento.remetente);
     if (documento.destinatario) formData.append('destinatario', documento.destinatario);
+    if (documento.responsavel) formData.append('responsavel', documento.responsavel);
     if (documento.dataEnvio) formData.append('dataEnvio', documento.dataEnvio);
     if (documento.dataRecebimento) formData.append('dataRecebimento', documento.dataRecebimento);
     if (documento.tags) formData.append('tags', JSON.stringify(documento.tags));
@@ -111,12 +118,9 @@ export class DocumentosService {
     return this.listar(params);
   }
 
-  // Buscar documentos por departamento
+  // Buscar documentos por departamento usando endpoint específico
   static async buscarPorDepartamento(departamentoId: string, params?: DocumentoQueryParams): Promise<ApiPaginatedResponse<Documento>> {
-    return this.listar({
-      ...params,
-      departamento: departamentoId
-    });
+    return apiGet<ApiPaginatedResponse<Documento>>(`/documentos/departamento/${departamentoId}`, params as Record<string, string | number | boolean>);
   }
 
   // Buscar documentos por categoria
@@ -133,6 +137,11 @@ export class DocumentosService {
       ...params,
       tipo: tipoId
     });
+  }
+
+  // Buscar documentos por usuário usando endpoint específico
+  static async buscarPorUsuario(usuarioId: string, params?: DocumentoQueryParams): Promise<ApiPaginatedResponse<Documento>> {
+    return apiGet<ApiPaginatedResponse<Documento>>(`/documentos/usuario/${usuarioId}`, params as Record<string, string | number | boolean>);
   }
 
   // Download de documento
