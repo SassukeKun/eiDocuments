@@ -1,7 +1,7 @@
 
 import { apiGet, ApiResponse } from '@/lib/api';
 
-export interface StatsGlobal {
+export interface GlobalStats {
   resumo: {
     totalDocumentos: number;
     totalDepartamentos: number;
