@@ -74,6 +74,11 @@ export function useSingleDepartmentStats(departmentId: string): UseStatsState<Si
   );
 }
 
+// Hook para estatísticas do próprio departamento do usuário logado
+export function useMyDepartmentStats(): UseStatsState<SingleDepartmentStats> {
+  return useStatsQuery(() => statsService.getMyDepartmentStats());
+}
+
 // Hook para estatísticas de usuários
 export function useUserStats(): UseStatsState<UserStats> {
   return useStatsQuery(() => statsService.getUserStats());

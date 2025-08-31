@@ -137,7 +137,8 @@ const DocumentoEditModal: React.FC<DocumentoEditModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Erro ao salvar documento:', error);
-      alert('Erro ao salvar documento. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao salvar documento. Tente novamente.';
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }

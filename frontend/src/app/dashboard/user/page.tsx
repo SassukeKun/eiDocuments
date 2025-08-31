@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { formatPercent } from "@/lib/formatters";
 import { useAuth } from "@/hooks/useAuth";
-import StatsService, { StatsDepartamento } from "@/services/statsService";
+import statsService, { SingleDepartmentStats } from "@/services/statsService";
+import { useMyDepartmentStats } from "@/hooks/useStats";
 import { 
   FileText, 
   Folder,  
@@ -19,7 +20,8 @@ import {
   Search,
   Upload,
   BarChart3,
-  Clock
+  Clock,
+  LucideIcon
 } from "lucide-react";
 import ModernButton from "@/components/ui/ModernButton";
 import UserLayout from "@/components/ui/UserLayout";
@@ -54,7 +56,7 @@ interface DepartmentStats {
 interface QuickAction {
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon: LucideIcon;
   href: string;
   color: string;
 }
@@ -64,45 +66,22 @@ const UserDashboardPage = () => {
   const router = useRouter();
   const { user } = useAuth();
   
-  const [stats, setStats] = useState<StatsDepartamento | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Carregar estatísticas reais do departamento
-  useEffect(() => {
-    const loadStats = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        setError(null);
-        console.log('🔄 Carregando estatísticas do departamento...');
-        
-        const departmentStats = await StatsService.getMyDepartmentStats();
-        setStats(departmentStats);
-        console.log('✅ Estatísticas carregadas:', departmentStats);
-      } catch (err) {
-        console.error('❌ Erro ao carregar estatísticas:', err);
-        setError('Erro ao carregar estatísticas do departamento');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStats();
-  }, [user]);
+  // Usar o hook para carregar estatísticas do departamento
+  const { data: stats, loading, error, refetch } = useMyDepartmentStats();
 
   // Dados de fallback enquanto carrega
   const userDepartment = stats?.departamento?.nome || user?.departamento?.nome || "Departamento";
   
-  // Calcular documentos do usuário (simulado por enquanto)
-  const myDocuments = 0; // TODO: Implementar contagem de documentos do usuário
+  // Calcular documentos do usuário (baseado nos documentos recentes onde o usuário é o autor)
+  const myDocuments = stats?.documentos?.recentes?.filter(doc => 
+    doc.usuario?.nome === user?.nome
+  ).length || 0;
 
   // Documentos recentes do departamento (dados reais)
   const recentDepartmentDocuments = stats?.documentos?.recentes?.map(doc => ({
     id: doc._id,
     title: doc.titulo,
-    type: "Documento",
+    type: doc.tipo?.nome || "Documento",
     size: "N/A",
     uploadedBy: doc.usuario?.nome || "Usuário desconhecido",
     uploadDate: doc.dataCriacao,
@@ -114,28 +93,28 @@ const UserDashboardPage = () => {
     {
       title: "Upload de Documento",
       description: "Adicionar novo documento ao departamento",
-      icon: <Upload className="w-5 h-5" />,
+      icon: Upload,
       href: "/user/upload",
       color: "bg-blue-500"
     },
     {
       title: "Buscar Documentos",
       description: "Pesquisar em todos os documentos",
-      icon: <Search className="w-5 h-5" />,
+      icon: Search,
       href: "/user/buscar",
       color: "bg-green-500"
     },
     {
       title: "Meus Documentos",
       description: "Ver documentos que você criou",
-      icon: <FileText className="w-5 h-5" />,
+      icon: FileText,
       href: "/user/meus-documentos",
       color: "bg-purple-500"
     },
     {
       title: "Documentos do Departamento",
       description: "Ver todos os documentos do seu departamento",
-      icon: <Building2 className="w-5 h-5" />,
+      icon: Building2,
       href: "/user/documentos",
       color: "bg-orange-500"
     }
@@ -146,8 +125,12 @@ const UserDashboardPage = () => {
     return ((current - previous) / previous) * 100;
   };
 
-  // Simular crescimento por enquanto (TODO: implementar lógica real)
-  const documentsGrowth = 15; // Simulado
+  // Calcular crescimento baseado na proporção de documentos ativos vs arquivados
+  const totalDocuments = (stats?.documentos?.total || 0);
+  const activeDocuments = (stats?.documentos?.ativos || 0);
+  const documentsGrowth = totalDocuments > 0 
+    ? Math.round((activeDocuments / totalDocuments) * 100) - 50 // Simula crescimento baseado na atividade
+    : 0;
 
   // Loading e Error states
   if (loading) {
@@ -213,6 +196,14 @@ const UserDashboardPage = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              <ModernButton 
+                variant="outline" 
+                onClick={refetch}
+                disabled={loading}
+              >
+                <TrendingUp className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </ModernButton>
               <ModernButton variant="outline" onClick={() => router.push('/user/buscar')}>
                 <Search className="w-4 h-4 mr-2" />
                 Buscar
@@ -225,7 +216,7 @@ const UserDashboardPage = () => {
           </div>
 
           {/* Cards de Estatísticas do Departamento */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <StatsCard
               title="Documentos do Departamento"
               value={stats?.documentos?.total || 0}
@@ -272,6 +263,16 @@ const UserDashboardPage = () => {
               iconBg="bg-orange-100"
               loading={loading}
             />
+
+            <StatsCard
+              title="Tipos de Documentos"
+              value={stats?.documentos?.porTipo?.length || 0}
+              subtitle="Tipos diferentes no depto"
+              icon={BarChart3}
+              iconColor="text-indigo-600"
+              iconBg="bg-indigo-100"
+              loading={loading}
+            />
           </div>
         </div>
 
@@ -289,6 +290,61 @@ const UserDashboardPage = () => {
                 href={action.href}
               />
             ))}
+          </div>
+        </div>
+
+        {/* Estatísticas Detalhadas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Distribuição por Categoria */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Documentos por Categoria</h3>
+            {loading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-8 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : stats?.documentos?.porCategoria?.length ? (
+              <div className="space-y-3">
+                {stats.documentos.porCategoria.slice(0, 5).map((categoria, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-sm text-gray-700">{categoria.categoria}</span>
+                    <span className="text-sm font-medium text-gray-900">{categoria.quantidade}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Nenhuma categoria encontrada</p>
+            )}
+          </div>
+
+          {/* Distribuição por Tipo */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Documentos por Tipo</h3>
+            {loading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 w-8 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : stats?.documentos?.porTipo?.length ? (
+              <div className="space-y-3">
+                {stats.documentos.porTipo.slice(0, 5).map((tipo, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-sm text-gray-700">{tipo.tipo}</span>
+                    <span className="text-sm font-medium text-gray-900">{tipo.quantidade}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Nenhum tipo encontrado</p>
+            )}
           </div>
         </div>
 

@@ -8,6 +8,7 @@ import { FileText, Eye, Download, Building2, FolderOpen, Tag, Calendar, User, Ed
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
 import { useAuth } from '@/hooks/useAuth';
+import { DocumentosService } from '@/services/documentosService';
 import DocumentoViewModal from '@/components/details/DocumentoViewModal';
 import DocumentoEditModal from '@/components/forms/DocumentoEditModal';
 
@@ -61,15 +62,50 @@ const DocumentosDepartamentoPage = () => {
   };
 
   const handleEdit = (documento: Documento) => {
+    // Verificar se o usuário pode editar este documento
+    const canEdit = canUserEditDocument(documento);
+    if (!canEdit) {
+      alert('Você só pode editar documentos que foram criados por você.');
+      return;
+    }
+    
     setSelectedDocumento(documento);
     setIsEditModalOpen(true);
+  };
+
+  const canUserEditDocument = (documento: Documento): boolean => {
+    // Usuário pode editar apenas documentos que ele criou
+    return documento.usuario?._id === user?._id || documento.usuario?.nome === user?.nome;
   };
 
   const handleSaveEdit = async (documento: Documento, formData: any) => {
     try {
       console.log('Salvando edições do documento:', documento._id, formData);
-      // TODO: Implementar atualização no serviço
-      alert('Funcionalidade de edição será implementada em breve!');
+      
+      // Verificar permissão novamente antes de salvar
+      if (!canUserEditDocument(documento)) {
+        throw new Error('Você não tem permissão para editar este documento.');
+      }
+      
+      // Preparar dados para atualização
+      const updateData: any = {};
+      
+      // Apenas incluir campos que têm valores (categoria e tipo omitidos por enquanto)
+      if (formData.titulo?.trim()) updateData.titulo = formData.titulo.trim();
+      if (formData.descricao?.trim()) updateData.descricao = formData.descricao.trim();
+      if (formData.tipoMovimento) updateData.tipoMovimento = formData.tipoMovimento;
+      if (formData.remetente?.trim()) updateData.remetente = formData.remetente.trim();
+      if (formData.destinatario?.trim()) updateData.destinatario = formData.destinatario.trim();
+      if (formData.responsavel?.trim()) updateData.responsavel = formData.responsavel.trim();
+      if (formData.dataEnvio) updateData.dataEnvio = formData.dataEnvio + 'T00:00:00.000Z';
+      if (formData.dataRecebimento) updateData.dataRecebimento = formData.dataRecebimento + 'T00:00:00.000Z';
+      if (formData.tags && formData.tags.length > 0) updateData.tags = formData.tags;
+      if (formData.status) updateData.ativo = formData.status === 'ativo';
+
+      console.log('Dados preparados para atualização:', updateData);
+
+      // Atualizar documento via serviço
+      await DocumentosService.atualizar(documento._id, updateData);
       
       // Recarregar documentos do departamento
       if (user?.departamento?._id) {
@@ -222,29 +258,46 @@ const DocumentosDepartamentoPage = () => {
         </span>
       ),
     },
+    {
+      key: 'actions',
+      title: 'Ações',
+      width: 'w-32',
+      render: (value, record: Documento) => (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => handleDownload(record)}
+            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+            title="Download"
+          >
+            <Download className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleView(record)}
+            className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
+            title="Visualizar"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          {canUserEditDocument(record) && (
+            <button
+              onClick={() => handleEdit(record)}
+              className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+              title="Editar"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+          )}
+          {!canUserEditDocument(record) && (
+            <div className="p-1 text-gray-300" title="Você não pode editar este documento">
+              <Edit className="w-4 h-4" />
+            </div>
+          )}
+        </div>
+      ),
+    },
   ];
 
-  const actions: TableAction[] = [
-    {
-      key: 'download',
-      label: 'Download',
-      icon: <Download className="w-4 h-4" />,
-      onClick: handleDownload,
-      variant: 'primary',
-    },
-    {
-      key: 'view',
-      label: 'Visualizar',
-      icon: <Eye className="w-4 h-4" />,
-      onClick: handleView,
-    },
-    {
-      key: 'edit',
-      label: 'Editar',
-      icon: <Edit className="w-4 h-4" />,
-      onClick: handleEdit,
-    },
-  ];
+
 
   return (
     <UserLayout>
@@ -262,7 +315,7 @@ const DocumentosDepartamentoPage = () => {
         <DataTable
           data={documentos}
           columns={columns}
-          actions={actions}
+          actions={[]} // Remover ações fixas, usar ações dinâmicas na coluna
           loading={loading}
           emptyMessage="Nenhum documento encontrado no seu departamento"
           onSort={(column, direction) => {

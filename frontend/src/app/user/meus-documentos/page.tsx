@@ -8,6 +8,7 @@ import { FileText, Edit, Trash2, Eye, Download, Building2, FolderOpen, Tag, Cale
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
 import { useAuth } from '@/hooks/useAuth';
+import { DocumentosService } from '@/services/documentosService';
 import Link from 'next/link';
 import DocumentoViewModal from '@/components/details/DocumentoViewModal';
 import DocumentoEditModal from '@/components/forms/DocumentoEditModal';
@@ -86,9 +87,26 @@ const MeusDocumentosPage = () => {
   const handleSaveEdit = async (documento: Documento, formData: any) => {
     try {
       console.log('Salvando edições do documento:', documento._id, formData);
-      // TODO: Implementar atualização no serviço
-      // await DocumentosService.atualizar(documento._id, formData);
-      alert('Funcionalidade de edição será implementada em breve!');
+      
+      // Preparar dados para atualização
+      const updateData: any = {};
+      
+      // Apenas incluir campos que têm valores (categoria e tipo omitidos por enquanto)
+      if (formData.titulo?.trim()) updateData.titulo = formData.titulo.trim();
+      if (formData.descricao?.trim()) updateData.descricao = formData.descricao.trim();
+      if (formData.tipoMovimento) updateData.tipoMovimento = formData.tipoMovimento;
+      if (formData.remetente?.trim()) updateData.remetente = formData.remetente.trim();
+      if (formData.destinatario?.trim()) updateData.destinatario = formData.destinatario.trim();
+      if (formData.responsavel?.trim()) updateData.responsavel = formData.responsavel.trim();
+      if (formData.dataEnvio) updateData.dataEnvio = formData.dataEnvio + 'T00:00:00.000Z';
+      if (formData.dataRecebimento) updateData.dataRecebimento = formData.dataRecebimento + 'T00:00:00.000Z';
+      if (formData.tags && formData.tags.length > 0) updateData.tags = formData.tags;
+      if (formData.status) updateData.ativo = formData.status === 'ativo';
+
+      console.log('Dados preparados para atualização:', updateData);
+
+      // Atualizar documento via serviço
+      await DocumentosService.atualizar(documento._id, updateData);
       
       // Recarregar documentos do usuário
       if (user?._id) {
