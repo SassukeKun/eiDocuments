@@ -365,16 +365,12 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
     </DetailModal>
 
     {/* Document Preview Modal */}
-    {documento.arquivo?.secureUrl && (
-      <DocumentPreview
-        isOpen={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        documentUrl={documento.arquivo.secureUrl}
-        fileName={documento.arquivo.originalName || documento.titulo}
-        fileType={documento.arquivo.format || 'unknown'}
-        onDownload={handleDownload}
-      />
-    )}
+    <DocumentPreview
+      isOpen={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      documento={documento}
+      onDownload={handleDownload}
+    />
     </>
   );
 };
