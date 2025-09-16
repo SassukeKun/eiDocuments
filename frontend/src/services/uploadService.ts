@@ -195,4 +195,55 @@ export class UploadService {
       throw error;
     }
   }
+
+  // Upload usando IDs de categoria e tipo existentes
+  static async uploadDocumentoComIDs(data: {
+    titulo: string;
+    descricao?: string;
+    categoria: string; // ID da categoria
+    tipo: string; // ID do tipo
+    departamento: string;
+    usuario: string;
+    tipoMovimento: 'enviado' | 'recebido' | 'interno';
+    remetente?: string;
+    destinatario?: string;
+    responsavel?: string;
+    dataEnvio?: string;
+    dataRecebimento?: string;
+    tags?: string[];
+    arquivo: File;
+  }): Promise<any> {
+    console.log('🚀 Iniciando upload com IDs:', data);
+    
+    try {
+      // Criar documento diretamente com IDs fornecidos
+      const documentoData: DocumentoCreateData = {
+        titulo: data.titulo,
+        descricao: data.descricao,
+        categoria: data.categoria,
+        tipo: data.tipo,
+        departamento: data.departamento,
+        usuario: data.usuario,
+        tipoMovimento: data.tipoMovimento,
+        remetente: data.remetente,
+        destinatario: data.destinatario,
+        responsavel: data.responsavel,
+        dataEnvio: data.dataEnvio,
+        dataRecebimento: data.dataRecebimento,
+        tags: data.tags,
+        arquivo: data.arquivo
+      };
+      
+      console.log('📄 Criando documento com IDs:', documentoData);
+      
+      const documento = await DocumentosService.criar(documentoData);
+      
+      console.log('✅ Documento criado com sucesso:', documento);
+      return documento;
+      
+    } catch (error) {
+      console.error('❌ Erro no upload com IDs:', error);
+      throw error;
+    }
+  }
 }
