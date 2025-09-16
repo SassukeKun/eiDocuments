@@ -12,12 +12,10 @@ export interface ApiResponse<T> {
 export interface ApiPaginatedResponse<T> {
   success: boolean;
   data: T[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  page: number;
+  limit: number;
+  total: number;
+  totalPages?: number; // Opcional para compatibilidade
 }
 
 export interface ApiErrorResponse {

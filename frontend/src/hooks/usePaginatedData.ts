@@ -73,9 +73,18 @@ export const usePaginatedData = <T,>({
       const sort = sortColumn ? { column: sortColumn, direction: sortDirection } : undefined;
       const result = await fetchData(currentPage, itemsPerPage, searchQuery || undefined, sort);
       
+      console.log('🔍 usePaginatedData result:', result);
+      
       setData(result.data);
       setTotalPages(result.totalPages);
       setTotalItems(result.total);
+      
+      console.log('🔍 usePaginatedData state:', {
+        totalItems: result.total,
+        totalPages: result.totalPages,
+        currentPage,
+        itemsPerPage
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
       setData([]);

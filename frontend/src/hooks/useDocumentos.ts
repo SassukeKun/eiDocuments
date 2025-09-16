@@ -290,11 +290,61 @@ export const useDocumentos = () => {
     }
   }, [showError]);
 
+  // Carregar com paginação (compatível com usePaginatedData)
+  const carregarPaginado = useCallback(async (
+    page: number, 
+    limit: number, 
+    search?: string, 
+    sort?: { column: string; direction: 'asc' | 'desc' }
+  ) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params: DocumentoQueryParams = {
+        page,
+        limit,
+        ...(search && { q: search }),
+        ...(sort && { 
+          sortBy: sort.column,
+          sortOrder: sort.direction 
+        })
+      };
+      
+      const response = await DocumentosService.listar(params);
+      
+      console.log('🔍 Response carregarPaginado:', response);
+      
+      // O backend retorna: { success: true, data: [...], page, limit, total }
+      // Calcular totalPages
+      const totalPages = Math.ceil((response.total || 0) / (response.limit || params.limit || 10));
+      
+      const result = {
+        data: response.data,
+        total: response.total || 0,
+        page: response.page || 1,
+        totalPages
+      };
+      
+      console.log('🔍 Result carregarPaginado:', result);
+      
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar documentos paginados';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
   return {
     documentos,
     loading,
     error,
     carregar,
+    carregarPaginado,
     buscarPorId,
     criar,
     atualizar,
