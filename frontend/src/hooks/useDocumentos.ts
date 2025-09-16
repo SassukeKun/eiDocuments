@@ -313,22 +313,16 @@ export const useDocumentos = () => {
       
       const response = await DocumentosService.listar(params);
       
-      console.log('🔍 Response carregarPaginado:', response);
-      
       // O backend retorna: { success: true, data: [...], page, limit, total }
       // Calcular totalPages
       const totalPages = Math.ceil((response.total || 0) / (response.limit || params.limit || 10));
       
-      const result = {
+      return {
         data: response.data,
         total: response.total || 0,
         page: response.page || 1,
         totalPages
       };
-      
-      console.log('🔍 Result carregarPaginado:', result);
-      
-      return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar documentos paginados';
       setError(errorMessage);
