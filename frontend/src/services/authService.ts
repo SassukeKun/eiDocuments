@@ -10,7 +10,7 @@ export interface User {
     nome: string;
     codigo: string;
   };
-  roles: string[];
+  role: 'admin' | 'editor' | 'user';
   ativo: boolean;
 }
 
@@ -52,33 +52,67 @@ class AuthService {
     });
   }
 
-  // Métodos para verificar permissões
+  // Métodos para verificar permissões baseados no novo sistema hierárquico
+  // admin: único, acesso total
+  // editor: gerente departamental, acesso ao seu departamento
+  // user: nível básico
+  
   isAdmin(user: User): boolean {
-    return user.roles.includes('admin');
+    return user.role === 'admin';
+  }
+
+  isEditor(user: User): boolean {
+    return user.role === 'editor';
+  }
+
+  isUser(user: User): boolean {
+    return user.role === 'user';
   }
 
   canEdit(user: User): boolean {
-    return user.roles.includes('admin') || user.roles.includes('editor');
+    // Admin e Editor podem editar
+    return user.role === 'admin' || user.role === 'editor';
   }
 
   canManageUsers(user: User): boolean {
-    return user.roles.includes('admin') || user.roles.includes('user_manager');
+    // Apenas Admin pode gerenciar usuários
+    return user.role === 'admin';
   }
 
   canDeleteDocuments(user: User): boolean {
-    return user.roles.includes('admin') || user.roles.includes('document_manager');
+    // Admin e Editor podem deletar documentos
+    return user.role === 'admin' || user.role === 'editor';
   }
 
-  hasRole(user: User, role: string): boolean {
-    return user.roles.includes(role);
+  canAccessAllDepartments(user: User): boolean {
+    // Apenas Admin pode acessar todos os departamentos
+    return user.role === 'admin';
   }
 
-  hasAnyRole(user: User, roles: string[]): boolean {
-    return roles.some(role => user.roles.includes(role));
+  canAccessDepartment(user: User, departmentId: string): boolean {
+    // Admin: acesso a todos
+    // Editor: acesso apenas ao seu departamento
+    // User: acesso apenas ao seu departamento
+    if (user.role === 'admin') return true;
+    return user.departamento._id === departmentId;
   }
 
-  hasAllRoles(user: User, roles: string[]): boolean {
-    return roles.every(role => user.roles.includes(role));
+  hasRole(user: User, role: 'admin' | 'editor' | 'user'): boolean {
+    return user.role === role;
+  }
+
+  hasAnyRole(user: User, roles: ('admin' | 'editor' | 'user')[]): boolean {
+    return roles.includes(user.role);
+  }
+
+  hasMinimumRole(user: User, minRole: 'admin' | 'editor' | 'user'): boolean {
+    // Hierarquia: admin > editor > user
+    const hierarchy: Record<string, number> = {
+      admin: 3,
+      editor: 2,
+      user: 1
+    };
+    return hierarchy[user.role] >= hierarchy[minRole];
   }
 
   // Determinar dashboard baseado nos roles

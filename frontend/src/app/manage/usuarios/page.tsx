@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
@@ -11,11 +12,21 @@ import { Users, Edit, Trash2, Eye, Shield, User, Building2 } from 'lucide-react'
 import { Usuario } from '@/types';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { usePaginatedData } from '@/hooks/usePaginatedData';
+import { useAuth } from '@/hooks/useAuth';
 
 const UsuariosPage = () => {
+  const router = useRouter();
+  const { canManageUsers, loading: authLoading } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null);
+  
+  // Verificar permissões - apenas admin pode gerenciar usuários
+  useEffect(() => {
+    if (!authLoading && !canManageUsers()) {
+      router.push('/dashboard');
+    }
+  }, [authLoading, canManageUsers, router]);
   
   const {
     carregarPaginado,
@@ -88,15 +99,15 @@ const UsuariosPage = () => {
     setSelectedUsuario(null);
   };
 
-  const getRoleBadges = (roles: string[]) => {
-    const roleMap: Record<string, { label: string; class: string; icon: React.ReactNode }> = {
+  const getRoleBadge = (role: 'admin' | 'editor' | 'user') => {
+    const roleMap: Record<'admin' | 'editor' | 'user', { label: string; class: string; icon: React.ReactNode }> = {
       admin: { 
-        label: 'Admin', 
+        label: 'Administrador', 
         class: 'bg-red-100 text-red-800',
         icon: <Shield className="w-3 h-3" />
       },
       editor: { 
-        label: 'Editor', 
+        label: 'Editor (Gerente)', 
         class: 'bg-blue-100 text-blue-800',
         icon: <Users className="w-3 h-3" />
       },
@@ -107,18 +118,12 @@ const UsuariosPage = () => {
       },
     };
     
+    const roleInfo = roleMap[role] || roleMap.user;
     return (
-      <div className="flex flex-wrap gap-1">
-        {roles.map((role, index) => {
-          const roleInfo = roleMap[role] || roleMap.user;
-          return (
-            <span key={index} className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${roleInfo.class}`}>
-              {roleInfo.icon}
-              <span className="ml-1">{roleInfo.label}</span>
-            </span>
-          );
-        })}
-      </div>
+      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${roleInfo.class}`}>
+        {roleInfo.icon}
+        <span className="ml-1">{roleInfo.label}</span>
+      </span>
     );
   };
 
@@ -157,11 +162,11 @@ const UsuariosPage = () => {
       ),
     },
     {
-      key: 'roles',
-      title: 'Funções',
+      key: 'role',
+      title: 'Função',
       sortable: true,
-      width: 'w-32',
-      render: (value) => getRoleBadges(value),
+      width: 'w-40',
+      render: (value) => getRoleBadge(value as 'admin' | 'editor' | 'user'),
     },
     {
       key: 'dataCriacao',
@@ -205,14 +210,7 @@ const UsuariosPage = () => {
       label: 'Editar',
       icon: <Edit className="w-4 h-4" />,
       onClick: handleEdit,
-    },
-    {
-      key: 'permissions',
-      label: 'Permissões',
-      icon: <Shield className="w-4 h-4" />,
-      onClick: (record) => {
-        console.log('Gerenciar permissões:', record);
-      },
+      // Só admin pode editar usuários
     },
     {
       key: 'delete',
@@ -220,6 +218,7 @@ const UsuariosPage = () => {
       icon: <Trash2 className="w-4 h-4" />,
       onClick: handleDelete,
       variant: 'danger',
+      // Só admin pode deletar usuários
     },
   ];
 

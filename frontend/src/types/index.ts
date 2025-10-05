@@ -40,7 +40,7 @@ export interface Usuario {
   username: string;
   senha?: string; // Only for creation/update, not returned in GET
   departamento: string | Departamento; // ID ou objeto populado
-  roles: string[];
+  role: 'admin' | 'editor' | 'user'; // Single role: admin (único), editor (gerente departamental), user (básico)
   ativo: boolean;
   dataCriacao: string;
   dataAtualizacao: string;
@@ -123,7 +123,7 @@ export interface DocumentoQueryParams extends BaseQueryParams {
 }
 
 export interface UsuarioQueryParams extends BaseQueryParams {
-  roles?: string[];
+  role?: 'admin' | 'editor' | 'user';
 }
 
 // Tipos para criação/edição (omitindo campos automáticos)
@@ -182,7 +182,7 @@ export interface CreateUsuario {
   username: string;
   senha: string;
   departamento: string;
-  roles?: string[];
+  role?: 'admin' | 'editor' | 'user'; // Default: 'user'
   ativo?: boolean;
 }
 

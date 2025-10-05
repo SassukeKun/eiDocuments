@@ -10,8 +10,9 @@ const DashboardPage = () => {
 
   useEffect(() => {
     if (!loading && user) {
-      // Redirecionar baseado nos roles do usuário
-      if (user.roles.includes('admin') || user.roles.includes('editor')) {
+      // Redirecionar baseado no role único do usuário
+      // admin e editor vão para dashboard admin
+      if (user.role === 'admin' || user.role === 'editor') {
         router.push('/dashboard/admin');
       } else {
         router.push('/dashboard/user');

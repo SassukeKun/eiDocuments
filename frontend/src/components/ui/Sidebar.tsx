@@ -104,8 +104,9 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     }
   ];
 
-  // Determinar baseado no role do usuário autenticado
-  const isAdmin = user?.roles.includes('admin') || user?.roles.includes('editor') || false;
+  // Determinar baseado no role único do usuário autenticado
+  // Admin e Editor têm acesso ao menu completo (área de usuário + área admin)
+  const isAdmin = user?.role === 'admin' || user?.role === 'editor' || false;
   const menuItems = isAdmin ? [...userMenuItems, ...adminMenuItems] : userMenuItems;
 
   const isActive = (href: string) => {
