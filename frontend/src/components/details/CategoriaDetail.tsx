@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import statsService from '@/services/statsService';
 import DetailModal from '@/components/ui/DetailModal';
 import { CategoriaDocumento, Departamento } from '@/types';
@@ -9,14 +9,9 @@ import {
   Calendar, 
   Building2, 
   Code, 
-  FileText, 
-  Activity, 
-  BarChart3,
-  Clock,
   CheckCircle,
   XCircle,
-  Palette,
-  Users
+  Palette
 } from 'lucide-react';
 
 interface CategoriaDetailProps {
@@ -25,59 +20,30 @@ interface CategoriaDetailProps {
   categoria: CategoriaDocumento | null;
 }
 
-interface CategoriaStats {
-  totalDocumentos: number;
-  documentosAtivos: number;
-  documentosArquivados: number;
-  ultimoDocumento?: {
-    titulo: string;
-    data: string;
-    usuario: string;
-  };
-  usuarios: {
-    nome: string;
-    quantidade: number;
-  }[];
-  documentosRecentes: {
-    titulo: string;
-    data: string;
-    tipo: string;
-  }[];
-}
 
 const CategoriaDetail: React.FC<CategoriaDetailProps> = ({
   isOpen,
   onClose,
   categoria
 }) => {
-  const [stats, setStats] = useState<CategoriaStats | null>(null);
+  const [stats, setStats] = useState<import('@/services/statsService').CategoryStats | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen && categoria) {
       loadStats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, categoria]);
 
   const loadStats = async () => {
     if (!categoria) return;
     setLoading(true);
     try {
-      // Chamada real para API de estatísticas de categoria
       const apiStats = await statsService.getCategoryStats();
-      // Encontrar dados da categoria específica
-      const uso = (apiStats.distribuicoes?.usoPorCategoria || []).find(cat => cat.categoria === categoria.nome);
-      // Recentes e usuários são simulados pois não há endpoint dedicado
-      setStats({
-        totalDocumentos: uso?.quantidade || 0,
-        documentosAtivos: 0, // Não disponível
-        documentosArquivados: 0, // Não disponível
-        ultimoDocumento: undefined, // Não disponível
-        usuarios: [], // Não disponível
-        documentosRecentes: [] // Não disponível
-      });
-    } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
+      setStats(apiStats);
+    } catch {
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -184,22 +150,69 @@ const CategoriaDetail: React.FC<CategoriaDetailProps> = ({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-2 text-gray-600">Carregando estatísticas...</span>
           </div>
-        ) : stats && (
-          <div>
-            <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Estatísticas de Uso
-            </h4>
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600">Total de Documentos</p>
-                  <p className="text-2xl font-bold text-blue-900">{stats.totalDocumentos}</p>
-                </div>
-                <FileText className="w-8 h-8 text-blue-600" />
+        ) : stats && categoria && (
+          <>
+            {/* Totais da Categoria */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-blue-600">Total de Categorias</p>
+                <p className="text-2xl font-bold text-blue-900">{stats.totais?.total ?? 0}</p>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-green-600">Ativas</p>
+                <p className="text-2xl font-bold text-green-900">{stats.totais?.ativas ?? 0}</p>
+              </div>
+              <div className="bg-orange-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-orange-600">Inativas</p>
+                <p className="text-2xl font-bold text-orange-900">{stats.totais?.inativas ?? 0}</p>
               </div>
             </div>
-          </div>
+
+            {/* Uso por Categoria */}
+            {stats.distribuicoes?.usoPorCategoria?.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mt-6 mb-3">Uso por Categoria</h4>
+                <div className="space-y-2">
+                  {stats.distribuicoes.usoPorCategoria.filter(cat => cat.categoria === categoria.nome).map((cat, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-900">{cat.categoria}</span>
+                      <span className="text-sm text-gray-600">{cat.quantidade} docs</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Distribuição por Departamento */}
+            {stats.distribuicoes?.porDepartamento?.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mt-6 mb-3">Distribuição por Departamento</h4>
+                <div className="space-y-2">
+                  {stats.distribuicoes.porDepartamento.map((dep, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-900">{dep.departamento}</span>
+                      <span className="text-sm text-gray-600">{dep.quantidade} docs</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recentes */}
+            {stats.recentes?.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mt-6 mb-3">Categorias Recentes</h4>
+                <div className="space-y-2">
+                  {stats.recentes.filter(cat => cat.nome === categoria.nome).map((cat, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-900">{cat.nome}</span>
+                      <span className="text-xs text-gray-500">{formatDate(cat.dataCriacao)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Metadados */}

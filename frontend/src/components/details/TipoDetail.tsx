@@ -1,6 +1,7 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import statsService from '@/services/statsService';
 import DetailModal from '@/components/ui/DetailModal';
 import { TipoDocumento } from '@/types';
 import { 
@@ -34,6 +35,28 @@ const TipoDetail: React.FC<TipoDetailProps> = ({
   onClose,
   tipo
 }) => {
+  const [stats, setStats] = useState<import('@/services/statsService').TypeStats | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && tipo) {
+      loadStats();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, tipo]);
+
+  const loadStats = async () => {
+    setLoading(true);
+    try {
+      const apiStats = await statsService.getTypeStats();
+      setStats(apiStats);
+    } catch {
+      setStats(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!tipo) return null;
 
   return (
@@ -87,6 +110,77 @@ const TipoDetail: React.FC<TipoDetailProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Estatísticas do Tipo */}
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2 text-gray-600">Carregando estatísticas...</span>
+          </div>
+        ) : stats && tipo && (
+          <>
+            {/* Totais do Tipo */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-blue-600">Total de Tipos</p>
+                <p className="text-2xl font-bold text-blue-900">{stats.totais?.total ?? 0}</p>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-green-600">Ativos</p>
+                <p className="text-2xl font-bold text-green-900">{stats.totais?.ativos ?? 0}</p>
+              </div>
+              <div className="bg-orange-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-orange-600">Inativos</p>
+                <p className="text-2xl font-bold text-orange-900">{stats.totais?.inativos ?? 0}</p>
+              </div>
+            </div>
+
+            {/* Uso por Tipo */}
+            {stats.distribuicoes?.usoPorTipo?.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mt-6 mb-3">Uso por Tipo</h4>
+                <div className="space-y-2">
+                  {stats.distribuicoes.usoPorTipo.filter(t => t.tipo === tipo.nome).map((t, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-900">{t.tipo}</span>
+                      <span className="text-sm text-gray-600">{t.quantidade} docs</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mais Usados */}
+            {stats.distribuicoes?.maisUsados?.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mt-6 mb-3">Mais Usados</h4>
+                <div className="space-y-2">
+                  {stats.distribuicoes.maisUsados.filter(t => t.nome === tipo.nome).map((t, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-900">{t.nome}</span>
+                      <span className="text-sm text-gray-600">{t.quantidade} docs</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recentes */}
+            {stats.recentes?.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mt-6 mb-3">Tipos Recentes</h4>
+                <div className="space-y-2">
+                  {stats.recentes.filter(t => t.nome === tipo.nome).map((t, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-900">{t.nome}</span>
+                      <span className="text-xs text-gray-500">{formatDate(t.dataCriacao)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         {/* Metadados */}
         <div className="border-t pt-4">

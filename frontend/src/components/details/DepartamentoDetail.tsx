@@ -1,6 +1,7 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import statsService from '@/services/statsService';
 import DetailModal from '@/components/ui/DetailModal';
 import { Departamento } from '@/types';
 import { 
@@ -34,9 +35,31 @@ const DepartamentoDetail: React.FC<DepartamentoDetailProps> = ({
   onClose,
   departamento
 }) => {
+  const [stats, setStats] = useState<import('@/services/statsService').SingleDepartmentStats | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && departamento) {
+      loadStats();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, departamento]);
+
+  const loadStats = async () => {
+    if (!departamento) return;
+    setLoading(true);
+    try {
+      const apiStats = await statsService.getSingleDepartmentStats(departamento._id);
+      setStats(apiStats);
+    } catch (error) {
+      setStats(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!departamento) return null;
 
-  // Os dados reais disponíveis: nome, ativo, descrição, código, datas
   return (
     <DetailModal
       isOpen={isOpen}
@@ -88,6 +111,80 @@ const DepartamentoDetail: React.FC<DepartamentoDetailProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Estatísticas do Departamento */}
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2 text-gray-600">Carregando estatísticas...</span>
+          </div>
+        ) : stats && (
+          <>
+            {/* Cards de Totais */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-blue-600">Total de Documentos</p>
+                <p className="text-2xl font-bold text-blue-900">{stats.documentos?.total ?? 0}</p>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-green-600">Ativos</p>
+                <p className="text-2xl font-bold text-green-900">{stats.documentos?.ativos ?? 0}</p>
+              </div>
+              <div className="bg-orange-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-orange-600">Arquivados</p>
+                <p className="text-2xl font-bold text-orange-900">{stats.documentos?.arquivados ?? 0}</p>
+              </div>
+            </div>
+
+            {/* Documentos por Categoria */}
+            {stats.documentos?.porCategoria?.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mt-6 mb-3">Documentos por Categoria</h4>
+                <div className="space-y-2">
+                  {stats.documentos.porCategoria.map((cat: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-900">{cat.categoria}</span>
+                      <span className="text-sm text-gray-600">{cat.quantidade} docs</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Documentos por Tipo */}
+            {stats.documentos?.porTipo?.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mt-6 mb-3">Documentos por Tipo</h4>
+                <div className="space-y-2">
+                  {stats.documentos.porTipo.map((tipo: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-sm font-medium text-gray-900">{tipo.tipo}</span>
+                      <span className="text-sm text-gray-600">{tipo.quantidade} docs</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Documentos Recentes */}
+            {stats.documentos?.recentes?.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-gray-900 mt-6 mb-3">Documentos Recentes</h4>
+                <div className="space-y-2">
+                  {stats.documentos.recentes.map((doc: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">{doc.titulo}</span>
+                        <span className="ml-2 text-xs text-gray-500">{formatDate(doc.dataCriacao)}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{doc.categoria?.nome} / {doc.tipo?.nome}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         {/* Metadados */}
         <div className="border-t pt-4">
