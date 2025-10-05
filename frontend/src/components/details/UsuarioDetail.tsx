@@ -121,24 +121,21 @@ const UsuarioDetail: React.FC<UsuarioDetailProps> = ({
     return departamento.nome;
   };
 
-  const getRoleBadges = (roles: string[]) => {
-    const roleConfig: Record<string, { bg: string; text: string; label: string }> = {
-      'admin': { bg: 'bg-red-100', text: 'text-red-800', label: 'Admin' },
-      'editor': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Editor' },
+  const getRoleBadge = (role: 'admin' | 'editor' | 'user') => {
+    const roleConfig: Record<'admin' | 'editor' | 'user', { bg: string; text: string; label: string }> = {
+      'admin': { bg: 'bg-red-100', text: 'text-red-800', label: 'Administrador' },
+      'editor': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Editor (Gerente)' },
       'user': { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Usuário' }
     };
     
-    return roles.map((role, index) => {
-      const config = roleConfig[role] || roleConfig.user;
-      return (
-        <span 
-          key={index}
-          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.bg} ${config.text}`}
-        >
-          {config.label}
-        </span>
-      );
-    });
+    const config = roleConfig[role] || roleConfig.user;
+    return (
+      <span 
+        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${config.bg} ${config.text}`}
+      >
+        {config.label}
+      </span>
+    );
   };
 
   const getActionIcon = (acao: string) => {
@@ -213,10 +210,8 @@ const UsuarioDetail: React.FC<UsuarioDetailProps> = ({
                 
                 <div className="flex items-center space-x-2">
                   <Shield className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-500 mr-2">Permissões:</span>
-                  <div className="flex space-x-1">
-                    {getRoleBadges(usuario.roles)}
-                  </div>
+                  <span className="text-sm text-gray-500 mr-2">Função:</span>
+                  {getRoleBadge(usuario.role)}
                 </div>
               </div>
             </div>

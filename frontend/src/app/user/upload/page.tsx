@@ -22,6 +22,8 @@ import PageHeader from "@/components/ui/PageHeader";
 import { useToastContext } from "@/contexts/ToastContext";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useTipos } from "@/hooks/useTipos";
+import { useCategorias } from "@/hooks/useCategorias";
 import { UploadService } from "@/services/uploadService";
 
 interface UploadFile {
@@ -54,6 +56,8 @@ const UploadPage = () => {
   const { success, error } = useToastContext();
   const router = useRouter();
   const { user } = useAuth();
+  const { tipos, carregar: carregarTipos, loading: loadingTipos } = useTipos();
+  const { categorias, carregar: carregarCategorias, loading: loadingCategorias } = useCategorias();
   
   const userDepartment = user?.departamento?.nome || "Departamento não identificado";
   
@@ -75,6 +79,22 @@ const UploadPage = () => {
     tags: [],
     ativo: true
   });
+
+  // Carregar tipos e categorias
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await Promise.all([
+          carregarTipos(),
+          carregarCategorias()
+        ]);
+      } catch (err) {
+        console.error('Erro ao carregar dados:', err);
+      }
+    };
+    
+    loadData();
+  }, [carregarTipos, carregarCategorias]);
 
   // Atualizar responsável quando o usuário mudar
   useEffect(() => {
@@ -329,12 +349,12 @@ const UploadPage = () => {
           f.id === file.id ? { ...f, status: 'uploading' as const, progress: 20 } : f
         ));
 
-        // Criar dados do documento para envio com criação automática de categoria/tipo
+        // Criar dados do documento para envio
         const uploadData = {
           titulo: formData.titulo,
           descricao: formData.descricao,
-          categoriaNome: formData.categoria,
-          tipoNome: formData.tipo,
+          categoria: formData.categoria,
+          tipo: formData.tipo,
           departamento: user.departamento._id,
           usuario: user._id,
           tipoMovimento: formData.tipoMovimento,
@@ -356,8 +376,8 @@ const UploadPage = () => {
           f.id === file.id ? { ...f, progress: 60 } : f
         ));
 
-        // Enviar para o backend com criação automática de categoria/tipo
-        await UploadService.uploadDocumento(uploadData);
+        // Enviar para o backend usando IDs dos tipos e categorias selecionados
+        await UploadService.uploadDocumentoComIDs(uploadData);
         
         // Atualizar progresso para quase completo
         setFiles(prev => prev.map(f => 
@@ -566,15 +586,23 @@ const UploadPage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Categoria *
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.categoria}
                 onChange={(e) => handleInputChange('categoria', e.target.value)}
                 className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Ex: Contratos, Relatórios, Correspondência..."
                 required
-              />
-              <p className="text-xs text-gray-500 mt-1">Digite o tipo de categoria para este documento</p>
+              >
+                <option value="">Selecione uma categoria...</option>
+                {categorias.map((categoria) => (
+                  <option key={categoria._id} value={categoria._id}>
+                    {categoria.nome}
+                  </option>
+                ))}
+              </select>
+              {loadingCategorias && (
+                <p className="text-xs text-blue-500 mt-1">Carregando categorias...</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">Selecione a categoria do documento</p>
             </div>
 
             {/* Tipo */}
@@ -582,15 +610,23 @@ const UploadPage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tipo *
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.tipo}
                 onChange={(e) => handleInputChange('tipo', e.target.value)}
                 className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Ex: Ofício, Memorando, Ata, Parecer..."
                 required
-              />
-              <p className="text-xs text-gray-500 mt-1">Digite o tipo de documento</p>
+              >
+                <option value="">Selecione um tipo...</option>
+                {tipos.map((tipo) => (
+                  <option key={tipo._id} value={tipo._id}>
+                    {tipo.nome}
+                  </option>
+                ))}
+              </select>
+              {loadingTipos && (
+                <p className="text-xs text-blue-500 mt-1">Carregando tipos...</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">Selecione o tipo de documento</p>
             </div>
 
             {/* Tipo de Movimento */}

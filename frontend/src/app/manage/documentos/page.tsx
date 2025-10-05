@@ -9,34 +9,39 @@ import DocumentoDetail from '@/components/details/DocumentoDetail';
 import { FileText, Edit, Trash2, Eye, Download, Building2, FolderOpen } from 'lucide-react';
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
+import { usePaginatedData } from '@/hooks/usePaginatedData';
 
 const DocumentosPage = () => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDocumento, setSelectedDocumento] = useState<Documento | null>(null);
   
   const {
-    documentos,
-    loading,
-    carregar,
-    buscarPorTexto,
+    carregarPaginado,
     buscarPorId,
     remover,
     baixar
   } = useDocumentos();
 
+  // Hook de paginação com dados da API
+  const {
+    data: documentos,
+    loading,
+    setSearchQuery,
+    handleSort,
+    paginationProps,
+    refetch
+  } = usePaginatedData({
+    fetchData: carregarPaginado,
+    initialItemsPerPage: 10
+  });
+
   useEffect(() => {
-    carregar();
-  }, [carregar]);
+    // O usePaginatedData já carrega os dados automaticamente
+  }, []);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      carregar();
-      return;
-    }
-    buscarPorTexto(query);
   };
 
   const handleDelete = async (documento: Documento) => {
@@ -46,7 +51,7 @@ const DocumentosPage = () => {
 
     try {
       await remover(documento._id);
-      carregar(); // Recarregar lista
+      refetch(); // Recarregar lista
     } catch (err) {
       // Erro já tratado pelo hook
       console.error('Erro ao excluir documento:', err);
@@ -81,7 +86,7 @@ const DocumentosPage = () => {
   };
 
   const handleFormSuccess = () => {
-    carregar(); // Recarregar lista após sucesso
+    refetch(); // Recarregar lista após sucesso
   };
 
   const handleFormClose = () => {
@@ -300,14 +305,13 @@ const DocumentosPage = () => {
         />
 
         <DataTable
-          data={documentos}
+          data={documentos as Documento[]}
           columns={columns}
           actions={actions}
           loading={loading}
           emptyMessage="Nenhum documento encontrado"
-          onSort={(column, direction) => {
-            console.log('Ordenar por:', column, direction);
-          }}
+          pagination={paginationProps}
+          onSort={handleSort}
         />
 
         <DocumentoForm

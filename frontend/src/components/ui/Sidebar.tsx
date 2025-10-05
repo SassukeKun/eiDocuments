@@ -104,8 +104,9 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     }
   ];
 
-  // Determinar baseado no role do usuário autenticado
-  const isAdmin = user?.roles.includes('admin') || user?.roles.includes('editor') || false;
+  // Determinar baseado no role único do usuário autenticado
+  // Admin e Editor têm acesso ao menu completo (área de usuário + área admin)
+  const isAdmin = user?.role === 'admin' || user?.role === 'editor' || false;
   const menuItems = isAdmin ? [...userMenuItems, ...adminMenuItems] : userMenuItems;
 
   const isActive = (href: string) => {
@@ -125,12 +126,22 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     `}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        {!isCollapsed && (
+        {!isCollapsed ? (
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-white" />
-            </div>
+            <img 
+              src="/logo.jpg" 
+              alt="Contratuz Logo" 
+              className="w-8 h-8 rounded-lg object-cover"
+            />
             <span className="text-xl font-bold text-gray-800">eiDocs</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center w-full">
+            <img 
+              src="/logo.jpg" 
+              alt="Contratuz Logo" 
+              className="w-8 h-8 rounded-lg object-cover"
+            />
           </div>
         )}
         <button

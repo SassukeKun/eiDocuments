@@ -77,7 +77,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg">
         {/* Header */}
         <div className="flex h-16 items-center justify-center border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
+          <div className="flex items-center space-x-2">
+            <img 
+              src="/logo.jpg" 
+              alt="Contratuz Logo" 
+              className="w-8 h-8 rounded-lg object-cover"
+            />
+            <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
+          </div>
         </div>
         
         {/* Menu */}

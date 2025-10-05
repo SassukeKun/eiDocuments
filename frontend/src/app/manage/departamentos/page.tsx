@@ -11,8 +11,10 @@ import { Building2, Edit, Trash2, Eye } from 'lucide-react';
 import { Departamento } from '@/types';
 import { useDepartamentos } from '@/hooks/useDepartamentos';
 import { usePaginatedData } from '@/hooks/usePaginatedData';
+import { useAuth } from '@/hooks/useAuth';
 
 const DepartamentosPage = () => {
+  const { isAdmin, canAccessAllDepartments } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDepartamento, setSelectedDepartamento] = useState<Departamento | null>(null);
@@ -157,19 +159,22 @@ const DepartamentosPage = () => {
       icon: <Eye className="w-4 h-4" />,
       onClick: handleView,
     },
-    {
-      key: 'edit',
-      label: 'Editar',
-      icon: <Edit className="w-4 h-4" />,
-      onClick: handleEdit,
-    },
-    {
-      key: 'delete',
-      label: 'Excluir',
-      icon: <Trash2 className="w-4 h-4" />,
-      onClick: handleDelete,
-      variant: 'danger',
-    },
+    // Apenas admin pode editar/deletar departamentos
+    ...(isAdmin() ? [
+      {
+        key: 'edit' as const,
+        label: 'Editar',
+        icon: <Edit className="w-4 h-4" />,
+        onClick: handleEdit,
+      },
+      {
+        key: 'delete' as const,
+        label: 'Excluir',
+        icon: <Trash2 className="w-4 h-4" />,
+        onClick: handleDelete,
+        variant: 'danger' as const,
+      },
+    ] : [])
   ];
 
   return (
@@ -178,7 +183,7 @@ const DepartamentosPage = () => {
         <PageHeader
           title="Departamentos"
           subtitle="Gerencie os departamentos da organização"
-          onAdd={handleAdd}
+          onAdd={isAdmin() ? handleAdd : undefined} // Apenas admin pode adicionar
           onSearch={handleSearch}
           onFilter={() => console.log('Filtrar departamentos')}
           onExport={() => console.log('Exportar departamentos')}

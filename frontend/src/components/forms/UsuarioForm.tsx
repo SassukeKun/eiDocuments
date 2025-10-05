@@ -26,7 +26,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
     username: '',
     senha: '',
     departamento: '',
-    roles: ['user'],
+    role: 'user', // Default role
     ativo: true
   });
 
@@ -41,7 +41,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         username: usuario.username,
         senha: '', // Senha vazia no modo edição
         departamento: typeof usuario.departamento === 'string' ? usuario.departamento : usuario.departamento._id,
-        roles: usuario.roles || ['user'],
+        role: usuario.role || 'user',
         ativo: usuario.ativo
       });
     } else {
@@ -52,7 +52,7 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         username: '',
         senha: '',
         departamento: '',
-        roles: ['user'],
+        role: 'user',
         ativo: true
       });
     }
@@ -82,21 +82,6 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
     // Limpar erro do campo
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleRoleChange = (role: string, checked: boolean) => {
-    setFormData(prev => {
-      const currentRoles = prev.roles || [];
-      const newRoles = checked 
-        ? [...currentRoles, role]
-        : currentRoles.filter(r => r !== role);
-      
-      return { ...prev, roles: newRoles };
-    });
-    
-    if (errors.roles) {
-      setErrors(prev => ({ ...prev, roles: '' }));
     }
   };
 
@@ -135,8 +120,8 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
       newErrors.departamento = 'Departamento é obrigatório';
     }
 
-    if (!formData.roles || formData.roles.length === 0) {
-      newErrors.roles = 'Pelo menos uma função deve ser selecionada';
+    if (!formData.role) {
+      newErrors.role = 'Função é obrigatória';
     }
 
     setErrors(newErrors);
@@ -164,8 +149,10 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         if (!updateData.senha?.trim()) {
           delete updateData.senha;
         }
+        console.log('📝 Dados sendo enviados para atualização:', updateData);
         await atualizar(usuario._id, updateData);
       } else {
+        console.log('📝 Dados sendo enviados para criação:', formData);
         await criar(formData);
       }
       
@@ -176,12 +163,6 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
       setLoading(false);
     }
   };
-
-  const availableRoles = [
-    { value: 'admin', label: 'Administrador' },
-    { value: 'editor', label: 'Editor' },
-    { value: 'user', label: 'Usuário' }
-  ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -300,30 +281,31 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         )}
       </div>
 
-      {/* Roles */}
+      {/* Role */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Funções *
+        <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+          Função *
         </label>
-        <div className="space-y-2">
-          {availableRoles.map((role) => (
-            <label key={role.value} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.roles?.includes(role.value) || false}
-                onChange={(e) => handleRoleChange(role.value, e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                disabled={loading}
-              />
-              <span className="ml-2 text-sm text-gray-700">
-                {role.label}
-              </span>
-            </label>
-          ))}
-        </div>
-        {errors.roles && (
-          <p className="mt-1 text-sm text-red-600">{errors.roles}</p>
+        <select
+          id="role"
+          name="role"
+          value={formData.role}
+          onChange={handleInputChange}
+          className={`mt-1 block w-full rounded-md border ${errors.role ? 'border-red-300' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm`}
+          disabled={loading}
+        >
+          <option value="user">Usuário (Nível Básico)</option>
+          <option value="editor">Editor (Gerente Departamental)</option>
+          <option value="admin">Administrador (Acesso Total - Único)</option>
+        </select>
+        {errors.role && (
+          <p className="mt-1 text-sm text-red-600">{errors.role}</p>
         )}
+        <p className="mt-1 text-sm text-gray-500">
+          {formData.role === 'admin' && '⚠️ Admin tem acesso total ao sistema e deve ser único'}
+          {formData.role === 'editor' && 'Editor gerencia documentos e categorias do seu departamento'}
+          {formData.role === 'user' && 'Usuário tem acesso básico de visualização e criação'}
+        </p>
       </div>
 
       {/* Ativo */}
