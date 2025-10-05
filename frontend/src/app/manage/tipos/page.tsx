@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
@@ -13,6 +13,7 @@ import { TipoDocumento } from '@/types';
 import { useTipos } from '@/hooks/useTipos';
 import { usePaginatedData } from '@/hooks/usePaginatedData';
 import { useCategorias } from '@/hooks/useCategorias';
+import { useAuth } from '@/hooks/useAuth';
 
 const TiposPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -21,12 +22,42 @@ const TiposPage = () => {
   const [selectedTipo, setSelectedTipo] = useState<TipoDocumento | null>(null);
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const {
     carregarPaginado,
+    carregarPorDepartamento,
     remover
   } = useTipos();
 
-  const { categorias, carregar: carregarCategorias } = useCategorias();
+  const { categorias, carregar: carregarCategorias, carregarPorDepartamento: carregarCategoriasPorDep } = useCategorias();
+  const [categoriasLoaded, setCategoriasLoaded] = useState(false);
+
+  // Não renderizar até que o usuário esteja carregado
+  if (authLoading) {
+    return (
+      <ManageLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando...</p>
+          </div>
+        </div>
+      </ManageLayout>
+    );
+  }
+
+  // Memorizar a função fetchData para evitar re-renderizações
+  const fetchData = useCallback(async (params: any) => {
+    // Se for editor, usar endpoint específico de departamento
+    if (!isAdmin() && user?.departamento?._id) {
+      console.log('🔵 Editor - Carregando tipos do departamento:', user.departamento._id);
+      return carregarPorDepartamento(user.departamento._id, params);
+    }
+    
+    // Admin vê todos
+    console.log('🔴 Admin - Carregando todos os tipos');
+    return carregarPaginado(params);
+  }, [isAdmin, user?.departamento?._id, carregarPorDepartamento, carregarPaginado]);
 
   // Hook de paginação com dados da API
   const {
@@ -39,14 +70,30 @@ const TiposPage = () => {
     paginationProps,
     refetch
   } = usePaginatedData({
-    fetchData: carregarPaginado,
+    fetchData,
     initialItemsPerPage: 10
   });
 
   useEffect(() => {
-    // O usePaginatedData já carrega os dados automaticamente
-    carregarCategorias();
-  }, [carregarCategorias]);
+    // Carregar categorias apenas uma vez baseado no role
+    if (categoriasLoaded || !user) return;
+    
+    const loadCategorias = async () => {
+      try {
+        if (isAdmin()) {
+          await carregarCategorias();
+        } else if (user?.departamento?._id) {
+          await carregarCategoriasPorDep(user.departamento._id, true);
+        }
+        setCategoriasLoaded(true);
+      } catch (error) {
+        console.error('Erro ao carregar categorias:', error);
+      }
+    };
+    
+    loadCategorias();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.departamento?._id]);
 
   // Configuração dos filtros
   const filterFields: FilterField[] = [
@@ -233,7 +280,7 @@ const TiposPage = () => {
         />
 
         <DataTable
-          data={tipos}
+          data={tipos as TipoDocumento[]}
           columns={columns}
           actions={actions}
           loading={loading}

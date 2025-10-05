@@ -3,7 +3,13 @@
 import { useState, useCallback, useEffect } from 'react';
 
 interface UsePaginatedDataProps<T> {
-  fetchData: (page: number, limit: number, search?: string, sort?: { column: string; direction: 'asc' | 'desc' }) => Promise<{
+  fetchData: (params: {
+    page?: number;
+    limit?: number;
+    q?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) => Promise<{
     data: T[];
     total: number;
     page: number;
@@ -70,8 +76,14 @@ export const usePaginatedData = <T,>({
     setError(null);
     
     try {
-      const sort = sortColumn ? { column: sortColumn, direction: sortDirection } : undefined;
-      const result = await fetchData(currentPage, itemsPerPage, searchQuery || undefined, sort);
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+        ...(searchQuery && { q: searchQuery }),
+        ...(sortColumn && { sortBy: sortColumn, sortOrder: sortDirection }),
+      };
+      
+      const result = await fetchData(params);
       
       setData(result.data);
       setTotalPages(result.totalPages);

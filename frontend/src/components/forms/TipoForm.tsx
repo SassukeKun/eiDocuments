@@ -49,9 +49,17 @@ const TipoForm: React.FC<TipoFormProps> = ({
   useEffect(() => {
     if (tipo) {
       // Modo edição - preencher formulário
+      // Remover prefixo do departamento do código (se existir)
+      let codigoSemPrefixo = tipo.codigo;
+      if (tipo.codigo.includes('-')) {
+        const partes = tipo.codigo.split('-');
+        // Remove a primeira parte (prefixo do departamento)
+        codigoSemPrefixo = partes.slice(1).join('-');
+      }
+      
       setFormData({
         nome: tipo.nome,
-        codigo: tipo.codigo,
+        codigo: codigoSemPrefixo,
         descricao: tipo.descricao || '',
         categoria: typeof tipo.categoria === 'string' ? tipo.categoria : tipo.categoria._id,
         ativo: tipo.ativo
@@ -214,6 +222,9 @@ const TipoForm: React.FC<TipoFormProps> = ({
           {errors.codigo && (
             <p className="mt-1 text-sm text-red-600">{errors.codigo}</p>
           )}
+          <p className="mt-1 text-sm text-blue-600">
+            ℹ️ O código do departamento será adicionado automaticamente como prefixo (ex: DTL-pdf_doc)
+          </p>
           <p className="mt-1 text-sm text-gray-500">
             Use apenas letras, números, hífen ou underscore
           </p>

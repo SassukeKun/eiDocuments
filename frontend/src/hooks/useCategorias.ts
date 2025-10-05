@@ -180,27 +180,35 @@ export const useCategorias = () => {
 
   // Carregar com paginação
   const carregarPaginado = useCallback(async (
-    page: number = 1, 
-    limit: number = 10, 
-    search?: string,
-    sort?: { column: string; direction: 'asc' | 'desc' }
+    params?: {
+      page?: number;
+      limit?: number;
+      q?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+      departamento?: string;
+    }
   ) => {
     try {
-      const params: CategoriaQueryParams = {
-        page,
-        limit,
+      const queryParams: CategoriaQueryParams = {
+        page: params?.page || 1,
+        limit: params?.limit || 10,
       };
 
-      if (search) {
-        params.q = search;
+      if (params?.q) {
+        queryParams.q = params.q;
       }
 
-      if (sort) {
-        params.sortBy = sort.column;
-        params.sortOrder = sort.direction;
+      if (params?.sortBy) {
+        queryParams.sortBy = params.sortBy;
+        queryParams.sortOrder = params.sortOrder || 'asc';
       }
 
-      const response = await CategoriasService.listar(params);
+      if (params?.departamento) {
+        queryParams.departamento = params.departamento;
+      }
+
+      const response = await CategoriasService.listar(queryParams);
       
       return {
         data: response.data,

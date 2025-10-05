@@ -153,27 +153,30 @@ export const useDepartamentos = () => {
 
   // Carregar com paginação (nova função)
   const carregarPaginado = useCallback(async (
-    page: number = 1, 
-    limit: number = 10, 
-    search?: string,
-    sort?: { column: string; direction: 'asc' | 'desc' }
+    params?: {
+      page?: number;
+      limit?: number;
+      q?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    }
   ) => {
     try {
-      const params: DepartamentoQueryParams = {
-        page,
-        limit,
+      const queryParams: DepartamentoQueryParams = {
+        page: params?.page || 1,
+        limit: params?.limit || 10,
       };
 
-      if (search) {
-        params.search = search;
+      if (params?.q) {
+        queryParams.search = params.q;
       }
 
-      if (sort) {
-        params.sortBy = sort.column;
-        params.sortOrder = sort.direction;
+      if (params?.sortBy) {
+        queryParams.sortBy = params.sortBy;
+        queryParams.sortOrder = params.sortOrder || 'asc';
       }
 
-      const response = await DepartamentosService.listar(params);
+      const response = await DepartamentosService.listar(queryParams);
       
       return {
         data: response.data,

@@ -167,27 +167,72 @@ export const useTipos = () => {
 
   // Carregar com paginação
   const carregarPaginado = useCallback(async (
-    page: number = 1, 
-    limit: number = 10, 
-    search?: string,
-    sort?: { column: string; direction: 'asc' | 'desc' }
+    params?: {
+      page?: number;
+      limit?: number;
+      q?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    }
   ) => {
     try {
-      const params: TipoQueryParams = {
-        page,
-        limit,
+      const queryParams: TipoQueryParams = {
+        page: params?.page || 1,
+        limit: params?.limit || 10,
       };
 
-      if (search) {
-        params.q = search;
+      if (params?.q) {
+        queryParams.q = params.q;
       }
 
-      if (sort) {
-        params.sortBy = sort.column;
-        params.sortOrder = sort.direction;
+      if (params?.sortBy) {
+        queryParams.sortBy = params.sortBy;
+        queryParams.sortOrder = params.sortOrder || 'asc';
       }
 
-      const response = await TiposService.listar(params);
+      const response = await TiposService.listar(queryParams);
+      
+      return {
+        data: response.data,
+        total: response.total,
+        page: response.page,
+        totalPages: Math.ceil(response.total / response.limit),
+      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar tipos';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    }
+  }, [showError]);
+
+  // Carregar tipos por departamento (para editores)
+  const carregarPorDepartamento = useCallback(async (
+    departamentoId: string,
+    params?: {
+      page?: number;
+      limit?: number;
+      q?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    }
+  ) => {
+    try {
+      const queryParams: TipoQueryParams = {
+        page: params?.page || 1,
+        limit: params?.limit || 10,
+      };
+
+      if (params?.q) {
+        queryParams.q = params.q;
+      }
+
+      if (params?.sortBy) {
+        queryParams.sortBy = params.sortBy;
+        queryParams.sortOrder = params.sortOrder || 'asc';
+      }
+
+      const response = await TiposService.listarPorDepartamento(departamentoId, queryParams);
       
       return {
         data: response.data,
@@ -217,5 +262,6 @@ export const useTipos = () => {
     obterParaSelect,
     verificarCodigo,
     carregarPaginado,
+    carregarPorDepartamento,
   };
 };

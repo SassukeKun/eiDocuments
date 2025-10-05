@@ -19,6 +19,11 @@ export class TiposService {
     return apiGet<ApiPaginatedResponse<TipoDocumento>>('/tipos', params as Record<string, string | number | boolean>);
   }
 
+  // Listar tipos por departamento
+  static async listarPorDepartamento(departamentoId: string, params?: TipoQueryParams): Promise<ApiPaginatedResponse<TipoDocumento>> {
+    return apiGet<ApiPaginatedResponse<TipoDocumento>>(`/tipos/departamento/${departamentoId}`, params as Record<string, string | number | boolean>);
+  }
+
   // Buscar tipo por ID
   static async buscarPorId(id: string): Promise<ApiResponse<TipoDocumento>> {
     return apiGet<ApiResponse<TipoDocumento>>(`/tipos/${id}`);

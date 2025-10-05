@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
@@ -31,22 +31,27 @@ const CategoriasPage = () => {
   const { departamentos, carregar: carregarDepartamentos } = useDepartamentos();
 
   // Determinar filtro de departamento baseado no role
-  // Editor: apenas categorias do seu departamento
-  // Admin: todas as categorias
-  const getDepartmentId = () => {
-    if (user?.role === 'editor' && user?.departamento) {
-      return typeof user.departamento === 'string' 
-        ? user.departamento 
-        : user.departamento._id;
-    }
-    return undefined; // Admin vê tudo
-  };
+  const departmentId = user?.role === 'editor' && user?.departamento
+    ? (typeof user.departamento === 'string' ? user.departamento : user.departamento._id)
+    : undefined;
 
-  const departmentFilter = getDepartmentId();
+  // Memorizar a função fetchData para evitar re-renderizações
+  const fetchData = useCallback(async (params: any) => {
+    // Se for editor, adicionar filtro de departamento
+    if (departmentId) {
+      return carregarPaginado({
+        ...params,
+        departamento: departmentId
+      });
+    }
+    
+    // Admin vê todos
+    return carregarPaginado(params);
+  }, [departmentId, carregarPaginado]);
 
   // Hook de paginação com dados da API
   const {
-    data: allCategorias,
+    data: categorias,
     loading,
     error,
     searchQuery,
@@ -55,21 +60,9 @@ const CategoriasPage = () => {
     paginationProps,
     refetch
   } = usePaginatedData({
-    fetchData: carregarPaginado,
+    fetchData,
     initialItemsPerPage: 10
   });
-
-  // Filtrar categorias baseado no departamento (apenas para Editor)
-  const categorias = React.useMemo(() => {
-    if (!departmentFilter) return allCategorias; // Admin vê tudo
-    
-    return allCategorias.filter(cat => {
-      const catDept = typeof cat.departamento === 'string' 
-        ? cat.departamento 
-        : cat.departamento?._id;
-      return catDept === departmentFilter;
-    });
-  }, [allCategorias, departmentFilter]);
 
   useEffect(() => {
     // O usePaginatedData já carrega os dados automaticamente

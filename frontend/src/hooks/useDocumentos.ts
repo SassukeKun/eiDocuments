@@ -292,30 +292,33 @@ export const useDocumentos = () => {
 
   // Carregar com paginação (compatível com usePaginatedData)
   const carregarPaginado = useCallback(async (
-    page: number, 
-    limit: number, 
-    search?: string, 
-    sort?: { column: string; direction: 'asc' | 'desc' }
+    params?: {
+      page?: number;
+      limit?: number;
+      q?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    }
   ) => {
     try {
       setLoading(true);
       setError(null);
       
-      const params: DocumentoQueryParams = {
-        page,
-        limit,
-        ...(search && { q: search }),
-        ...(sort && { 
-          sortBy: sort.column,
-          sortOrder: sort.direction 
+      const queryParams: DocumentoQueryParams = {
+        page: params?.page || 1,
+        limit: params?.limit || 10,
+        ...(params?.q && { q: params.q }),
+        ...(params?.sortBy && { 
+          sortBy: params.sortBy,
+          sortOrder: params.sortOrder || 'asc'
         })
       };
       
-      const response = await DocumentosService.listar(params);
+      const response = await DocumentosService.listar(queryParams);
       
       // O backend retorna: { success: true, data: [...], page, limit, total }
       // Calcular totalPages
-      const totalPages = Math.ceil((response.total || 0) / (response.limit || params.limit || 10));
+      const totalPages = Math.ceil((response.total || 0) / (response.limit || queryParams.limit || 10));
       
       return {
         data: response.data,
