@@ -131,14 +131,29 @@ const DocumentoViewModal: React.FC<DocumentoViewModalProps> = ({
                 <div>
                   <h3 className="text-sm font-medium text-gray-900 mb-2">Categoria</h3>
                   <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-                    <div className={`w-3 h-3 rounded-full bg-${documento.categoria?.cor || 'gray'}-500`}></div>
-                    <span className="text-sm font-medium">{documento.categoria?.nome || 'N/A'}</span>
+                    <div 
+                      className="w-3 h-3 rounded-full"
+                      style={{ 
+                        backgroundColor: typeof documento.categoria === 'object' && documento.categoria?.cor 
+                          ? documento.categoria.cor 
+                          : '#6b7280' 
+                      }}
+                    ></div>
+                    <span className="text-sm font-medium">
+                      {typeof documento.categoria === 'object' && documento.categoria?.nome 
+                        ? documento.categoria.nome 
+                        : 'N/A'}
+                    </span>
                   </div>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-900 mb-2">Tipo</h3>
                   <div className="p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium">{documento.tipo?.nome || 'N/A'}</span>
+                    <span className="text-sm font-medium">
+                      {typeof documento.tipo === 'object' && documento.tipo?.nome 
+                        ? documento.tipo.nome 
+                        : 'N/A'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -189,7 +204,7 @@ const DocumentoViewModal: React.FC<DocumentoViewModalProps> = ({
                     {formatFileSize(documento.arquivo?.size || 0)}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {documento.arquivo?.tipoMime || 'Tipo não identificado'}
+                    {documento.arquivo?.format?.toUpperCase() || 'Tipo não identificado'}
                   </div>
                 </div>
               </div>
@@ -199,7 +214,11 @@ const DocumentoViewModal: React.FC<DocumentoViewModalProps> = ({
                 <h3 className="text-sm font-medium text-gray-900 mb-2">Departamento</h3>
                 <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                   <Building2 className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm font-medium">{documento.departamento?.nome || 'N/A'}</span>
+                  <span className="text-sm font-medium">
+                    {typeof documento.departamento === 'object' && documento.departamento?.nome 
+                      ? documento.departamento.nome 
+                      : 'N/A'}
+                  </span>
                 </div>
               </div>
 
@@ -209,7 +228,11 @@ const DocumentoViewModal: React.FC<DocumentoViewModalProps> = ({
                   <h3 className="text-sm font-medium text-gray-900 mb-2">Criado por</h3>
                   <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                     <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-medium">{documento.usuario?.nome || 'N/A'}</span>
+                    <span className="text-sm font-medium">
+                      {typeof documento.usuario === 'object' && documento.usuario?.nome 
+                        ? documento.usuario.nome 
+                        : 'N/A'}
+                    </span>
                   </div>
                 </div>
               )}
