@@ -164,38 +164,6 @@ const UserDashboardPage = () => {
     }
   };
 
-  // Loading e Error states
-  if (loading) {
-    return (
-      <UserLayout>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando estatísticas...</p>
-          </div>
-        </div>
-      </UserLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <UserLayout>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-red-600 mb-4">{error}</div>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Tentar Novamente
-            </button>
-          </div>
-        </div>
-      </UserLayout>
-    );
-  }
-
   const handleDownloadDocument = (doc: DepartmentDocument) => {
     success(`Download iniciado: ${doc.title}`);
   };
@@ -213,6 +181,33 @@ const UserDashboardPage = () => {
 
   return (
     <UserLayout>
+      {/* Loading State */}
+      {loading && (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando estatísticas...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-600 mb-4">{error}</div>
+            <button 
+              onClick={() => refetch()} 
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Tentar Novamente
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {!loading && !error && (
       <div>
         {/* Header */}
         <div className="mb-10">
@@ -513,6 +508,8 @@ const UserDashboardPage = () => {
           </div>
         </div>
       </div>
+      )}
+      {/* Fim do Main Content */}
     </UserLayout>
   );
 };

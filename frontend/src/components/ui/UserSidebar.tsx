@@ -44,12 +44,12 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ className = '' }) => {
       href: '/user/buscar',
       description: 'Pesquisar documentos disponíveis'
     },
-    {
-      title: 'Configurações',
-      icon: Settings,
-      href: '/user/configuracoes',
-      description: 'Suas configurações pessoais'
-    }
+    // {
+    //   title: 'Configurações',
+    //   icon: Settings,
+    //   href: '/user/configuracoes',
+    //   description: 'Suas configurações pessoais'
+    // }
   ];
 
   const isActive = (href: string) => {
