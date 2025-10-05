@@ -113,8 +113,6 @@ const CategoriaForm: React.FC<CategoriaFormProps> = ({
 
     if (!formData.codigo.trim()) {
       newErrors.codigo = 'Código é obrigatório';
-    } else if (!/^[A-Z0-9_-]+$/.test(formData.codigo)) {
-      newErrors.codigo = 'Código deve conter apenas letras maiúsculas, números, hífen ou underscore';
     }
 
     if (!formData.departamento) {
@@ -198,16 +196,15 @@ const CategoriaForm: React.FC<CategoriaFormProps> = ({
             name="codigo"
             value={formData.codigo}
             onChange={handleInputChange}
-            className={`mt-1 block w-full rounded-md border ${errors.codigo ? 'border-red-300' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm uppercase`}
-            placeholder="CAT_001"
+            className={`mt-1 block w-full rounded-md border ${errors.codigo ? 'border-red-300' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm`}
+            placeholder="cat_001"
             disabled={loading}
-            style={{ textTransform: 'uppercase' }}
           />
           {errors.codigo && (
             <p className="mt-1 text-sm text-red-600">{errors.codigo}</p>
           )}
           <p className="mt-1 text-sm text-gray-500">
-            Use apenas letras maiúsculas, números, hífen ou underscore
+            Use apenas letras, números, hífen ou underscore
           </p>
         </div>
 

@@ -318,7 +318,6 @@ const DocumentosPage = () => {
           onAdd={handleAdd}
           onSearch={handleSearch}
           onFilter={() => console.log('Filtrar documentos')}
-          onExport={() => console.log('Exportar documentos')}
           addButtonText="Novo Documento"
           searchPlaceholder="Pesquisar documentos..."
         />

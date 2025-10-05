@@ -5,11 +5,13 @@ import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import FormModal from '@/components/ui/FormModal';
+import FilterPanel, { FilterField } from '@/components/ui/FilterPanel';
 import CategoriaForm from '@/components/forms/CategoriaForm';
 import CategoriaDetail from '@/components/details/CategoriaDetail';
 import { FolderOpen, Edit, Trash2, Eye } from 'lucide-react';
 import { CategoriaDocumento } from '@/types';
 import { useCategorias } from '@/hooks/useCategorias';
+import { useDepartamentos } from '@/hooks/useDepartamentos';
 import { usePaginatedData } from '@/hooks/usePaginatedData';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -18,11 +20,15 @@ const CategoriasPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedCategoria, setSelectedCategoria] = useState<CategoriaDocumento | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   
   const {
     carregarPaginado,
     remover
   } = useCategorias();
+
+  const { departamentos, carregar: carregarDepartamentos } = useDepartamentos();
 
   // Determinar filtro de departamento baseado no role
   // Editor: apenas categorias do seu departamento
@@ -67,7 +73,57 @@ const CategoriasPage = () => {
 
   useEffect(() => {
     // O usePaginatedData já carrega os dados automaticamente
-  }, []);
+    if (isAdmin()) {
+      carregarDepartamentos();
+    }
+  }, [isAdmin, carregarDepartamentos]);
+
+  // Configuração dos filtros (apenas para Admin)
+  const filterFields: FilterField[] = isAdmin() ? [
+    {
+      id: 'departamento',
+      label: 'Departamento',
+      type: 'select',
+      placeholder: 'Todos os departamentos',
+      options: departamentos.map(dept => ({
+        id: dept._id,
+        label: dept.nome,
+        value: dept._id
+      }))
+    },
+    {
+      id: 'ativo',
+      label: 'Status',
+      type: 'select',
+      placeholder: 'Todos',
+      options: [
+        { id: 'true', label: 'Ativos', value: 'true' },
+        { id: 'false', label: 'Inativos', value: 'false' }
+      ]
+    }
+  ] : [
+    {
+      id: 'ativo',
+      label: 'Status',
+      type: 'select',
+      placeholder: 'Todos',
+      options: [
+        { id: 'true', label: 'Ativos', value: 'true' },
+        { id: 'false', label: 'Inativos', value: 'false' }
+      ]
+    }
+  ];
+
+  const handleApplyFilters = (filters: Record<string, any>) => {
+    setActiveFilters(filters);
+    // TODO: Implementar lógica de filtragem na API
+    console.log('Filtros aplicados:', filters);
+  };
+
+  const handleClearFilters = () => {
+    setActiveFilters({});
+    refetch();
+  };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -245,8 +301,7 @@ const CategoriasPage = () => {
           subtitle="Gerencie as categorias de documentos"
           onAdd={handleAdd}
           onSearch={handleSearch}
-          onFilter={() => console.log('Filtrar categorias')}
-          onExport={() => console.log('Exportar categorias')}
+          onFilter={() => setIsFilterOpen(true)}
           addButtonText="Nova Categoria"
           searchPlaceholder="Pesquisar categorias..."
         />
@@ -259,6 +314,16 @@ const CategoriasPage = () => {
           emptyMessage="Nenhuma categoria encontrada"
           onSort={handleSort}
           pagination={paginationProps}
+        />
+
+        {/* Painel de Filtros */}
+        <FilterPanel
+          isOpen={isFilterOpen}
+          onClose={() => setIsFilterOpen(false)}
+          fields={filterFields}
+          onApply={handleApplyFilters}
+          onClear={handleClearFilters}
+          initialValues={activeFilters}
         />
 
         {/* Formulário Modal */}

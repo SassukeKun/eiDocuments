@@ -5,22 +5,28 @@ import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import FormModal from '@/components/ui/FormModal';
+import FilterPanel, { FilterField } from '@/components/ui/FilterPanel';
 import TipoForm from '@/components/forms/TipoForm';
 import TipoDetail from '@/components/details/TipoDetail';
 import { Edit, Trash2, Eye, File } from 'lucide-react';
 import { TipoDocumento } from '@/types';
 import { useTipos } from '@/hooks/useTipos';
 import { usePaginatedData } from '@/hooks/usePaginatedData';
+import { useCategorias } from '@/hooks/useCategorias';
 
 const TiposPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedTipo, setSelectedTipo] = useState<TipoDocumento | null>(null);
+  const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   
   const {
     carregarPaginado,
     remover
   } = useTipos();
+
+  const { categorias, carregar: carregarCategorias } = useCategorias();
 
   // Hook de paginação com dados da API
   const {
@@ -39,7 +45,44 @@ const TiposPage = () => {
 
   useEffect(() => {
     // O usePaginatedData já carrega os dados automaticamente
-  }, []);
+    carregarCategorias();
+  }, [carregarCategorias]);
+
+  // Configuração dos filtros
+  const filterFields: FilterField[] = [
+    {
+      id: 'categoria',
+      label: 'Categoria',
+      type: 'select',
+      placeholder: 'Todas as categorias',
+      options: categorias.map(cat => ({
+        id: cat._id,
+        label: cat.nome,
+        value: cat._id
+      }))
+    },
+    {
+      id: 'ativo',
+      label: 'Status',
+      type: 'select',
+      placeholder: 'Todos',
+      options: [
+        { id: 'true', label: 'Ativos', value: 'true' },
+        { id: 'false', label: 'Inativos', value: 'false' }
+      ]
+    }
+  ];
+
+  const handleApplyFilters = (filters: Record<string, any>) => {
+    setActiveFilters(filters);
+    // TODO: Implementar lógica de filtragem na API
+    console.log('Filtros aplicados:', filters);
+  };
+
+  const handleClearFilters = () => {
+    setActiveFilters({});
+    refetch();
+  };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -184,8 +227,7 @@ const TiposPage = () => {
           subtitle="Gerencie os tipos de documentos permitidos"
           onAdd={handleAdd}
           onSearch={handleSearch}
-          onFilter={() => console.log('Filtrar tipos')}
-          onExport={() => console.log('Exportar tipos')}
+          onFilter={() => setIsFilterOpen(true)}
           addButtonText="Novo Tipo"
           searchPlaceholder="Pesquisar tipos..."
         />
@@ -198,6 +240,16 @@ const TiposPage = () => {
           emptyMessage="Nenhum tipo encontrado"
           onSort={handleSort}
           pagination={paginationProps}
+        />
+
+        {/* Painel de Filtros */}
+        <FilterPanel
+          isOpen={isFilterOpen}
+          onClose={() => setIsFilterOpen(false)}
+          fields={filterFields}
+          onApply={handleApplyFilters}
+          onClear={handleClearFilters}
+          initialValues={activeFilters}
         />
 
         {/* Formulário Modal */}

@@ -6,6 +6,7 @@ import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import FormModal from '@/components/ui/FormModal';
+import FilterPanel, { FilterField } from '@/components/ui/FilterPanel';
 import DepartamentoForm from '@/components/forms/DepartamentoForm';
 import DepartamentoDetail from '@/components/details/DepartamentoDetail';
 import { Building2, Edit, Trash2, Eye } from 'lucide-react';
@@ -20,6 +21,8 @@ const DepartamentosPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDepartamento, setSelectedDepartamento] = useState<Departamento | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   
   // Verificar permissões - apenas admin pode gerenciar departamentos
   useEffect(() => {
@@ -51,6 +54,31 @@ const DepartamentosPage = () => {
   useEffect(() => {
     // O usePaginatedData já carrega os dados automaticamente
   }, []);
+
+  // Configuração dos filtros
+  const filterFields: FilterField[] = [
+    {
+      id: 'ativo',
+      label: 'Status',
+      type: 'select',
+      placeholder: 'Todos',
+      options: [
+        { id: 'true', label: 'Ativos', value: 'true' },
+        { id: 'false', label: 'Inativos', value: 'false' }
+      ]
+    }
+  ];
+
+  const handleApplyFilters = (filters: Record<string, any>) => {
+    setActiveFilters(filters);
+    // TODO: Implementar lógica de filtragem na API
+    console.log('Filtros aplicados:', filters);
+  };
+
+  const handleClearFilters = () => {
+    setActiveFilters({});
+    refetch();
+  };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -198,8 +226,7 @@ const DepartamentosPage = () => {
           subtitle="Gerencie os departamentos da organização"
           onAdd={isAdmin() ? handleAdd : undefined} // Apenas admin pode adicionar
           onSearch={handleSearch}
-          onFilter={() => console.log('Filtrar departamentos')}
-          onExport={() => console.log('Exportar departamentos')}
+          onFilter={() => setIsFilterOpen(true)}
           addButtonText="Novo Departamento"
           searchPlaceholder="Pesquisar departamentos..."
         />
@@ -212,6 +239,16 @@ const DepartamentosPage = () => {
           emptyMessage="Nenhum departamento encontrado"
           pagination={paginationProps}
           onSort={handleSort}
+        />
+
+        {/* Painel de Filtros */}
+        <FilterPanel
+          isOpen={isFilterOpen}
+          onClose={() => setIsFilterOpen(false)}
+          fields={filterFields}
+          onApply={handleApplyFilters}
+          onClear={handleClearFilters}
+          initialValues={activeFilters}
         />
 
         {/* Formulário Modal */}

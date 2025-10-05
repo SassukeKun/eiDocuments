@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ModernButton from './ModernButton';
-import { Plus, Search, Filter, Download } from 'lucide-react';
+import { Plus, Search, Filter } from 'lucide-react';
 
 interface PageHeaderProps {
   title: string;
@@ -10,12 +10,10 @@ interface PageHeaderProps {
   onAdd?: () => void;
   onSearch?: (query: string) => void;
   onFilter?: () => void;
-  onExport?: () => void;
   addButtonText?: string;
   searchPlaceholder?: string;
   showSearch?: boolean;
   showFilter?: boolean;
-  showExport?: boolean;
   showAdd?: boolean;
 }
 
@@ -25,12 +23,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   onAdd,
   onSearch,
   onFilter,
-  onExport,
   addButtonText = "Adicionar",
   searchPlaceholder = "Pesquisar...",
   showSearch = true,
   showFilter = true,
-  showExport = true,
   showAdd = true,
 }) => {
   return (
@@ -68,18 +64,6 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             >
               <Filter className="w-4 h-4" />
               <span>Filtros</span>
-            </ModernButton>
-          )}
-
-          {/* Export Button */}
-          {showExport && onExport && (
-            <ModernButton
-              variant="outline"
-              onClick={onExport}
-              className="flex items-center space-x-2"
-            >
-              <Download className="w-4 h-4" />
-              <span>Exportar</span>
             </ModernButton>
           )}
 

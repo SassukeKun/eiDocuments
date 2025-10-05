@@ -460,7 +460,6 @@ const UploadPage = () => {
           title="Upload de Documentos"
           subtitle="Adicione novos documentos ao sistema"
           showAdd={false}
-          showExport={false}
           showSearch={false}
           showFilter={false}
         />
