@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { formatPercent } from "@/lib/formatters";
+import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import statsService, { SingleDepartmentStats } from "@/services/statsService";
 import { useMyDepartmentStats } from "@/hooks/useStats";
 import { 
   FileText, 
@@ -12,7 +10,6 @@ import {
   Eye, 
   Plus,
   Building2,
-  Users,
   User,
   Calendar,
   TrendingUp,
@@ -20,7 +17,6 @@ import {
   Search,
   Upload,
   BarChart3,
-  Clock,
   LucideIcon
 } from "lucide-react";
 import ModernButton from "@/components/ui/ModernButton";
@@ -30,6 +26,8 @@ import QuickActionCard from "@/components/ui/QuickActionCard";
 import { useToastContext } from "@/contexts/ToastContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import DocumentoDetail from "@/components/details/DocumentoDetail";
+import { Documento } from "@/types";
 
 interface DepartmentDocument {
   id: string;
@@ -40,17 +38,6 @@ interface DepartmentDocument {
   uploadDate: string;
   tags: string[];
   status: 'active' | 'archived' | 'pending';
-}
-
-interface DepartmentStats {
-  totalDocuments: number;
-  myDocuments: number;
-  documentsThisMonth: number;
-  documentsLastMonth: number;
-  teamMembers: number;
-  categoriesUsed: number;
-  storageUsed: string;
-  lastActivity: string;
 }
 
 interface QuickAction {
@@ -120,17 +107,62 @@ const UserDashboardPage = () => {
     }
   ];
 
-  const calculateGrowth = (current: number, previous: number) => {
-    if (previous === 0) return 0;
-    return ((current - previous) / previous) * 100;
-  };
-
   // Calcular crescimento baseado na proporção de documentos ativos vs arquivados
   const totalDocuments = (stats?.documentos?.total || 0);
   const activeDocuments = (stats?.documentos?.ativos || 0);
   const documentsGrowth = totalDocuments > 0 
     ? Math.round((activeDocuments / totalDocuments) * 100) - 50 // Simula crescimento baseado na atividade
     : 0;
+
+  // Estado para controlar o modal de detalhes
+  const [selectedDocument, setSelectedDocument] = useState<Documento | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // Função para adaptar um documento parcial para o tipo Documento
+  function adaptToDocumento(doc: unknown): Documento {
+    const d = doc as Partial<Documento>;
+    return {
+      _id: d._id!,
+      titulo: d.titulo!,
+      descricao: d.descricao || '',
+      categoria: d.categoria || '',
+      tipo: d.tipo || '',
+      departamento: d.departamento || '',
+      usuario: d.usuario || '',
+      tipoMovimento: d.tipoMovimento || 'interno',
+      remetente: d.remetente,
+      destinatario: d.destinatario,
+      responsavel: d.responsavel,
+      dataEnvio: d.dataEnvio,
+      dataRecebimento: d.dataRecebimento,
+      arquivo: d.arquivo || {
+        cloudinaryId: '',
+        url: '',
+        secureUrl: '',
+        originalName: '',
+        format: '',
+        size: 0,
+        resourceType: 'raw',
+      },
+      status: d.status || 'ativo',
+      tags: d.tags || [],
+      ativo: typeof d.ativo === 'boolean' ? d.ativo : true,
+      dataCriacao: d.dataCriacao || '',
+      dataAtualizacao: d.dataAtualizacao || '',
+    };
+  }
+
+  // Função para abrir o modal de detalhes
+  const handleViewDocument = (doc: DepartmentDocument) => {
+    // Encontrar o documento completo nos dados reais (stats)
+    const fullDoc = stats?.documentos?.recentes?.find((d) => d._id === doc.id);
+    if (fullDoc) {
+      setSelectedDocument(adaptToDocumento(fullDoc));
+      setIsDetailOpen(true);
+    } else {
+      success(`Detalhes não encontrados para: ${doc.title}`);
+    }
+  };
 
   // Loading e Error states
   if (loading) {
@@ -163,10 +195,6 @@ const UserDashboardPage = () => {
       </UserLayout>
     );
   }
-
-  const handleViewDocument = (doc: DepartmentDocument) => {
-    success(`Visualizando documento: ${doc.title}`);
-  };
 
   const handleDownloadDocument = (doc: DepartmentDocument) => {
     success(`Download iniciado: ${doc.title}`);
@@ -432,6 +460,13 @@ const UserDashboardPage = () => {
               </Link>
             </div>
           )}
+          {/* Modal de Detalhes do Documento */}
+          <DocumentoDetail
+            isOpen={isDetailOpen}
+            onClose={() => setIsDetailOpen(false)}
+            documento={selectedDocument}
+            onDownload={undefined}
+          />
         </div>
 
         {/* Resumo de Atividade */}

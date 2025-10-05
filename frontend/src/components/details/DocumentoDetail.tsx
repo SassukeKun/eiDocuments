@@ -182,7 +182,7 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                {documento.arquivo?.secureUrl && (
+                {/* {documento.arquivo?.secureUrl && (
                   <button
                     onClick={() => window.open(documento.arquivo.secureUrl, '_blank')}
                     className="flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -190,7 +190,7 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
                     <Eye className="w-4 h-4 mr-1" />
                     Visualizar
                   </button>
-                )}
+                )} */}
                 <button
                   onClick={handleDownload}
                   className="flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
