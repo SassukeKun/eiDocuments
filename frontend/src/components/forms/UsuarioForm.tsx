@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { CreateUsuario, UpdateUsuario, Usuario, Departamento } from '@/types';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { useDepartamentos } from '@/hooks/useDepartamentos';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UsuarioFormProps {
   usuario?: Usuario | null; // null para criar, objeto para editar
@@ -16,9 +17,16 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
 }) => {
   const { criar, atualizar, verificarUsername } = useUsuarios();
   const { carregarAtivos } = useDepartamentos();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  
+  // Editor só pode criar usuários no seu departamento
+  const isEditor = user?.role === 'editor';
+  const userDepartmentId = typeof user?.departamento === 'string' 
+    ? user.departamento 
+    : user?.departamento?._id;
   
   const [formData, setFormData] = useState<CreateUsuario>({
     nome: '',
@@ -46,18 +54,19 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
       });
     } else {
       // Modo criação - limpar formulário
+      // Editor: pré-seleciona seu departamento automaticamente
       setFormData({
         nome: '',
         apelido: '',
         username: '',
         senha: '',
-        departamento: '',
+        departamento: isEditor && userDepartmentId ? userDepartmentId : '',
         role: 'user',
         ativo: true
       });
     }
     setErrors({});
-  }, [usuario]);
+  }, [usuario, isEditor, userDepartmentId]);
 
   // Carregar departamentos ativos
   useEffect(() => {
@@ -266,8 +275,8 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
           name="departamento"
           value={formData.departamento}
           onChange={handleInputChange}
-          className={`mt-1 block w-full rounded-md border ${errors.departamento ? 'border-red-300' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm`}
-          disabled={loading}
+          className={`mt-1 block w-full rounded-md border ${errors.departamento ? 'border-red-300' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm ${isEditor ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+          disabled={loading || isEditor}
         >
           <option value="">Selecione um departamento</option>
           {departamentos.map((depto) => (
@@ -278,6 +287,11 @@ const UsuarioForm: React.FC<UsuarioFormProps> = ({
         </select>
         {errors.departamento && (
           <p className="mt-1 text-sm text-red-600">{errors.departamento}</p>
+        )}
+        {isEditor && (
+          <p className="mt-1 text-sm text-blue-600">
+            🔒 Editores só podem criar usuários no seu próprio departamento
+          </p>
         )}
       </div>
 
