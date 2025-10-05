@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import UserLayout from '@/components/ui/UserLayout';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import { 
@@ -17,7 +18,12 @@ import {
 } from 'lucide-react';
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
-import { DocumentPreview } from '@/components/ui/DocumentPreview';
+
+// Dynamic import to avoid SSR issues with react-pdf
+const DocumentPreview = dynamic(
+  () => import('@/components/ui/DocumentPreview').then(mod => ({ default: mod.DocumentPreview })),
+  { ssr: false }
+);
 
 const BuscarDocumentosPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -202,17 +208,17 @@ const BuscarDocumentosPage = () => {
 
   const actions: TableAction[] = [
     {
+      key: 'preview',
+      label: 'Pré-visualizar',
+      icon: <Eye className="w-4 h-4" />,
+      onClick: handleView,
+    },
+    {
       key: 'download',
       label: 'Download',
       icon: <Download className="w-4 h-4" />,
       onClick: handleDownload,
       variant: 'success',
-    },
-    {
-      key: 'view',
-      label: 'Visualizar',
-      icon: <Eye className="w-4 h-4" />,
-      onClick: handleView,
     },
   ];
 

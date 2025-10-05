@@ -10,7 +10,6 @@ interface DocumentoViewModalProps {
   onClose: () => void;
   onEdit: (documento: Documento) => void;
   onDownload: (documento: Documento) => void;
-  onPreview?: (documento: Documento) => void; // Adicionar prop opcional para preview
 }
 
 const DocumentoViewModal: React.FC<DocumentoViewModalProps> = ({
@@ -18,8 +17,7 @@ const DocumentoViewModal: React.FC<DocumentoViewModalProps> = ({
   isOpen,
   onClose,
   onEdit,
-  onDownload,
-  onPreview
+  onDownload
 }) => {
   if (!isOpen || !documento) return null;
 
@@ -268,15 +266,6 @@ const DocumentoViewModal: React.FC<DocumentoViewModalProps> = ({
           >
             Fechar
           </button>
-          {onPreview && (
-            <button
-              onClick={() => onPreview(documento)}
-              className="flex items-center px-4 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              Preview
-            </button>
-          )}
           <button
             onClick={() => onDownload(documento)}
             className="flex items-center px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"

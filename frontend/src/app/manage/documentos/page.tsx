@@ -1,13 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import DocumentoForm from '@/components/forms/DocumentoForm';
 import DocumentoDetail from '@/components/details/DocumentoDetail';
-import { DocumentPreview } from '@/components/ui/DocumentPreview';
 import { FileText, Edit, Trash2, Eye, Download, Building2, FolderOpen } from 'lucide-react';
+
+// Dynamic import to avoid SSR issues with react-pdf
+const DocumentPreview = dynamic(
+  () => import('@/components/ui/DocumentPreview').then(mod => ({ default: mod.DocumentPreview })),
+  { ssr: false }
+);
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
 import { usePaginatedData } from '@/hooks/usePaginatedData';
@@ -270,6 +276,12 @@ const DocumentosPage = () => {
 
   const actions: TableAction[] = [
     {
+      key: 'preview',
+      label: 'Pré-visualizar',
+      icon: <Eye className="w-4 h-4" />,
+      onClick: handlePreview,
+    },
+    {
       key: 'download',
       label: 'Download',
       icon: <Download className="w-4 h-4" />,
@@ -278,8 +290,8 @@ const DocumentosPage = () => {
     },
     {
       key: 'view',
-      label: 'Visualizar',
-      icon: <Eye className="w-4 h-4" />,
+      label: 'Detalhes',
+      icon: <FileText className="w-4 h-4" />,
       onClick: handleView,
     },
     {
@@ -335,6 +347,19 @@ const DocumentosPage = () => {
           documento={selectedDocumento}
           onDownload={handleDownload}
         />
+
+        {/* Modal de Preview */}
+        {selectedDocumento && (
+          <DocumentPreview
+            isOpen={isPreviewOpen}
+            onClose={() => {
+              setIsPreviewOpen(false);
+              setSelectedDocumento(null);
+            }}
+            documento={selectedDocumento}
+            onDownload={() => handleDownload(selectedDocumento)}
+          />
+        )}
       </div>
     </ManageLayout>
   );

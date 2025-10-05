@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import UserLayout from '@/components/ui/UserLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
@@ -11,7 +12,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { DocumentosService } from '@/services/documentosService';
 import DocumentoViewModal from '@/components/details/DocumentoViewModal';
 import DocumentoEditModal from '@/components/forms/DocumentoEditModal';
-import { DocumentPreview } from '@/components/ui/DocumentPreview';
+
+// Dynamic import to avoid SSR issues with react-pdf
+const DocumentPreview = dynamic(
+  () => import('@/components/ui/DocumentPreview').then(mod => ({ default: mod.DocumentPreview })),
+  { ssr: false }
+);
 
 const DocumentosDepartamentoPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,7 +88,9 @@ const DocumentosDepartamentoPage = () => {
 
   const canUserEditDocument = (documento: Documento): boolean => {
     // Usuário pode editar apenas documentos que ele criou
-    return documento.usuario?._id === user?._id || documento.usuario?.nome === user?.nome;
+    const usuarioId = typeof documento.usuario === 'string' ? documento.usuario : documento.usuario?._id;
+    const usuarioNome = typeof documento.usuario === 'string' ? '' : documento.usuario?.nome;
+    return usuarioId === user?._id || usuarioNome === user?.nome;
   };
 
   const handleSaveEdit = async (documento: Documento, formData: any) => {
@@ -268,9 +276,16 @@ const DocumentosDepartamentoPage = () => {
     {
       key: 'actions',
       title: 'Ações',
-      width: 'w-32',
+      width: 'w-40',
       render: (value, record: Documento) => (
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => handlePreview(record)}
+            className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors"
+            title="Pré-visualizar"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
           <button
             onClick={() => handleDownload(record)}
             className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
@@ -281,9 +296,9 @@ const DocumentosDepartamentoPage = () => {
           <button
             onClick={() => handleView(record)}
             className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
-            title="Visualizar"
+            title="Detalhes"
           >
-            <Eye className="w-4 h-4" />
+            <FileText className="w-4 h-4" />
           </button>
           {canUserEditDocument(record) && (
             <button
@@ -352,7 +367,6 @@ const DocumentosDepartamentoPage = () => {
           }}
           onEdit={handleEdit}
           onDownload={handleDownload}
-          onPreview={handlePreview}
         />
 
         {/* Edição do Documento */}

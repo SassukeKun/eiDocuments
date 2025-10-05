@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import DetailModal from '@/components/ui/DetailModal';
-import { DocumentPreview } from '@/components/ui/DocumentPreview';
 import { Documento, CategoriaDocumento, TipoDocumento, Departamento, Usuario } from '@/types';
 import { 
   FileText, 
@@ -12,7 +11,6 @@ import {
   FolderOpen,
   File,
   Download,
-  Eye,
   Tag,
   Clock,
   Send,
@@ -38,7 +36,6 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
   onDownload
 }) => {
   const [imageError, setImageError] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
 
   if (!documento) return null;
 
@@ -109,13 +106,12 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
   const isImage = documento.arquivo?.format && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(documento.arquivo.format.toLowerCase());
 
   return (
-    <>
-      <DetailModal
-        isOpen={isOpen}
-        onClose={onClose}
-        title="Detalhes do Documento"
-        size="xl"
-      >
+    <DetailModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Detalhes do Documento"
+      size="xl"
+    >
       <div className="space-y-6">
         {/* Header do Documento */}
         <div className="bg-gray-50 rounded-lg p-4">
@@ -185,15 +181,6 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                {documento.arquivo?.secureUrl && (
-                  <button
-                    onClick={() => setPreviewOpen(true)}
-                    className="flex items-center px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Preview
-                  </button>
-                )}
                 <button
                   onClick={handleDownload}
                   className="flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
@@ -363,15 +350,6 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
         </div>
       </div>
     </DetailModal>
-
-    {/* Document Preview Modal */}
-    <DocumentPreview
-      isOpen={previewOpen}
-      onClose={() => setPreviewOpen(false)}
-      documento={documento}
-      onDownload={handleDownload}
-    />
-    </>
   );
 };
 
