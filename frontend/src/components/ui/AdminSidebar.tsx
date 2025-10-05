@@ -76,22 +76,22 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
   ];
 
   // Item de Relatórios
-  const reportsMenuItem = {
-    title: 'Relatórios',
-    icon: BarChart3,
-    href: '/manage/relatorios',
-    description: 'Relatórios do sistema'
-  };
+  // const reportsMenuItem = {
+  //   title: 'Relatórios',
+  //   icon: BarChart3,
+  //   href: '/manage/relatorios',
+  //   description: 'Relatórios do sistema'
+  // };
 
   // Montar menu baseado no role do usuário
   let menuItems = baseMenuItems;
 
   if (user?.role === 'admin') {
     // Admin vê tudo
-    menuItems = [...baseMenuItems, ...managerMenuItems, ...adminOnlyMenuItems, reportsMenuItem];
+    menuItems = [...baseMenuItems, ...managerMenuItems, ...adminOnlyMenuItems];
   } else if (user?.role === 'editor') {
     // Editor vê apenas itens de gerenciamento (SEM Usuários e Departamentos)
-    menuItems = [...baseMenuItems, ...managerMenuItems, reportsMenuItem];
+    menuItems = [...baseMenuItems, ...managerMenuItems];
   }
   // User vê apenas dashboard
 
@@ -193,13 +193,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
           </div>
         )}
         
-        <Link
+        {/* <Link
           href="/settings"
           className="flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
         >
           <Settings className="w-5 h-5" />
           {!isCollapsed && <span>Configurações</span>}
-        </Link>
+        </Link> */}
         
         <button 
           onClick={logout}
