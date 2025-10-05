@@ -66,6 +66,7 @@ const UploadPage = () => {
   const [newTag, setNewTag] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [tiposDoDepartamento, setTiposDoDepartamento] = useState<typeof tipos>([]);
   const [tiposFiltrados, setTiposFiltrados] = useState<typeof tipos>([]);
   const [formData, setFormData] = useState<DocumentForm>({
     titulo: '',
@@ -88,17 +89,46 @@ const UploadPage = () => {
       if (!userDepartmentId) return;
       
       try {
-        await Promise.all([
-          carregarTipos(),
-          carregarPorDepartamento(userDepartmentId, true) // Apenas categorias ativas do departamento
-        ]);
+        // Carregar categorias do departamento
+        await carregarPorDepartamento(userDepartmentId, true);
       } catch (err) {
-        console.error('Erro ao carregar dados:', err);
+        console.error('Erro ao carregar categorias:', err);
       }
     };
     
     loadData();
-  }, [carregarTipos, carregarPorDepartamento, userDepartmentId]);
+  }, [carregarPorDepartamento, userDepartmentId]);
+
+  // Carregar tipos quando as categorias mudarem
+  useEffect(() => {
+    const loadTipos = async () => {
+      if (categorias.length === 0) {
+        setTiposDoDepartamento([]);
+        setTiposFiltrados([]);
+        return;
+      }
+      
+      try {
+        // Carregar todos os tipos ativos (serão filtrados por categoria na seleção)
+        const params = { ativo: true, limit: 1000 };
+        const response = await carregarTipos(params);
+        
+        // Filtrar apenas tipos que pertencem às categorias do departamento
+        const categoriasIds = categorias.map(cat => cat._id);
+        const tiposFiltradosPorDept = response.data.filter(tipo => {
+          const categoriaId = typeof tipo.categoria === 'string' ? tipo.categoria : tipo.categoria._id;
+          return categoriasIds.includes(categoriaId);
+        });
+        
+        // Atualizar a lista de tipos disponíveis
+        setTiposDoDepartamento(tiposFiltradosPorDept);
+      } catch (err) {
+        console.error('Erro ao carregar tipos:', err);
+      }
+    };
+    
+    loadTipos();
+  }, [categorias, carregarTipos]);
 
   // Filtrar tipos baseado na categoria selecionada
   useEffect(() => {
@@ -107,7 +137,7 @@ const UploadPage = () => {
       return;
     }
 
-    const filtrados = tipos.filter(tipo => {
+    const filtrados = tiposDoDepartamento.filter(tipo => {
       // Se tipo.categoria é string (ID)
       if (typeof tipo.categoria === 'string') {
         return tipo.categoria === formData.categoria;
@@ -125,7 +155,7 @@ const UploadPage = () => {
         setFormData(prev => ({ ...prev, tipo: '' }));
       }
     }
-  }, [formData.categoria, tipos, formData.tipo]);
+  }, [formData.categoria, tiposDoDepartamento, formData.tipo]);
 
   // Atualizar responsável quando o usuário mudar
   useEffect(() => {

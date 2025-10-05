@@ -192,7 +192,7 @@ export const useCategorias = () => {
       };
 
       if (search) {
-        params.search = search;
+        params.q = search;
       }
 
       if (sort) {

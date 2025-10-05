@@ -263,6 +263,16 @@ const DepartamentosPage = () => {
           />
         </FormModal>
 
+        {/* Painel de Filtros */}
+        <FilterPanel
+          isOpen={isFilterOpen}
+          onClose={() => setIsFilterOpen(false)}
+          fields={filterFields}
+          onApply={handleApplyFilters}
+          onClear={handleClearFilters}
+          initialValues={activeFilters}
+        />
+
         {/* Modal de Detalhes */}
         <DepartamentoDetail
           isOpen={isDetailOpen}

@@ -2,7 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { formatNumber, formatPercent } from "@/lib/formatters";
-import { useGlobalStats, useDashboardStats } from "@/hooks/useStats";
+import { useGlobalStats, useDashboardStats, useMyDepartmentStats } from "@/hooks/useStats";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Search, 
   FileText, 
@@ -55,11 +56,105 @@ interface Department {
 const AdminDashboardPage = () => {
   const { success } = useToastContext();
   const router = useRouter();
+  const { user, isAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Integração com API de estatísticas
+  // Editor vê apenas estatísticas do seu departamento
+  const myDepartmentStats = useMyDepartmentStats();
+  
+  // Admin vê estatísticas globais
+  const adminDashboardStats = useDashboardStats();
+  
+  // Usar estatísticas apropriadas baseado no role
+  const isUserAdmin = isAdmin();
+  const stats = isUserAdmin ? adminDashboardStats : {
+    global: { 
+      data: myDepartmentStats.data ? {
+        resumo: {
+          totalDocumentos: myDepartmentStats.data.documentos?.total || 0,
+          totalDepartamentos: 1,
+          totalUsuarios: 0, // SingleDepartmentStats não tem total de usuários
+          totalCategorias: myDepartmentStats.data.documentos?.porCategoria?.length || 0,
+          totalTipos: myDepartmentStats.data.documentos?.porTipo?.length || 0,
+          documentosAtivos: myDepartmentStats.data.documentos?.ativos || 0,
+          documentosArquivados: myDepartmentStats.data.documentos?.arquivados || 0,
+          documentosRecentes: myDepartmentStats.data.documentos?.recentes?.length || 0
+        },
+        distribuicoes: {
+          porDepartamento: user?.departamento ? [{
+            nome: user.departamento.nome,
+            quantidade: myDepartmentStats.data.documentos?.total || 0
+          }] : [],
+          porTipo: myDepartmentStats.data.documentos?.porTipo || [],
+          porMovimento: []
+        },
+        tendencias: {
+          crescimentoSemanal: 0,
+          taxaAtivos: '0%'
+        }
+      } : null,
+      loading: myDepartmentStats.loading,
+      error: myDepartmentStats.error,
+      refetch: myDepartmentStats.refetch
+    },
+    documents: {
+      data: myDepartmentStats.data ? {
+        totais: {
+          total: myDepartmentStats.data.documentos?.total || 0,
+          ativos: myDepartmentStats.data.documentos?.ativos || 0,
+          arquivados: myDepartmentStats.data.documentos?.arquivados || 0
+        },
+        distribuicoes: {
+          porDepartamento: user?.departamento ? [{
+            departamento: user.departamento.nome,
+            quantidade: myDepartmentStats.data.documentos?.total || 0
+          }] : [],
+          porCategoria: myDepartmentStats.data.documentos?.porCategoria || [],
+          porTipo: myDepartmentStats.data.documentos?.porTipo || [],
+          porMovimento: []
+        },
+        recentes: myDepartmentStats.data.documentos?.recentes || [],
+        tendencias: {
+          porMes: []
+        }
+      } : null,
+      loading: myDepartmentStats.loading,
+      error: myDepartmentStats.error,
+      refetch: myDepartmentStats.refetch
+    },
+    departments: {
+      data: myDepartmentStats.data ? {
+        totais: {
+          total: 1,
+          ativos: 1,
+          inativos: 0
+        },
+        distribuicoes: {
+          categorias: user?.departamento ? [{
+            departamento: user.departamento.nome,
+            quantidade: myDepartmentStats.data.documentos?.porCategoria?.length || 0
+          }] : [],
+          usuarios: user?.departamento ? [{
+            departamento: user.departamento.nome,
+            quantidade: 0
+          }] : [],
+          documentos: user?.departamento ? [{
+            departamento: user.departamento.nome,
+            quantidade: myDepartmentStats.data.documentos?.total || 0
+          }] : []
+        }
+      } : null,
+      loading: myDepartmentStats.loading,
+      error: myDepartmentStats.error,
+      refetch: myDepartmentStats.refetch
+    },
+    loading: myDepartmentStats.loading,
+    error: myDepartmentStats.error,
+    refetchAll: myDepartmentStats.refetch
+  };
+
   const { 
     global: globalStats, 
     documents: documentStats, 
@@ -67,7 +162,7 @@ const AdminDashboardPage = () => {
     loading, 
     error, 
     refetchAll 
-  } = useDashboardStats();
+  } = stats;
 
   // Dados reais vindos do backend
   // Departamentos reais vindos do backend
@@ -92,20 +187,20 @@ const AdminDashboardPage = () => {
   // Documentos reais vindos do backend
   const documents: Document[] = useMemo(() => {
     if (!documentStats?.data) return [];
-    // documentStats.data.recentes: Array<{ _id, titulo, dataCriacao, departamento, categoria, tipo, usuario }>
-    return (documentStats.data.recentes || []).map((doc) => ({
+    // documentStats.data.recentes pode ter estruturas diferentes para admin vs editor
+    return (documentStats.data.recentes || []).map((doc: any) => ({
       id: doc._id,
       title: doc.titulo || "Documento",
-      department: doc.departamento?.nome || "-",
+      department: doc.departamento?.nome || (user?.departamento?.nome) || "-",
       type: doc.tipo?.nome || "-",
       size: "-",
-      uploadedBy: "-",
+      uploadedBy: doc.usuario?.nome || "-",
       uploadDate: doc.dataCriacao || "-",
       lastModified: doc.dataCriacao || "-",
       tags: [],
-      status: "active"
+      status: "active" as const
     }));
-  }, [documentStats]);
+  }, [documentStats, user]);
 
   const calculateGrowth = (current: number, previous: number) => {
     if (previous === 0) return 0;
@@ -323,11 +418,11 @@ const AdminDashboardPage = () => {
               </div>
             ) : documentStats?.data?.recentes?.length ? (
               <div className="space-y-4">
-                {documentStats.data.recentes.map((doc) => (
+                {documentStats.data.recentes.map((doc: any) => (
                   <div key={doc._id} className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <span className="text-sm text-gray-700">
-                      {doc.titulo} ({doc.tipo?.nome || '-'}) - {doc.departamento?.nome || '-'} em {doc.dataCriacao ? new Date(doc.dataCriacao).toLocaleDateString() : '-'}
+                      {doc.titulo} ({doc.tipo?.nome || '-'}) - {doc.departamento?.nome || user?.departamento?.nome || '-'} em {doc.dataCriacao ? new Date(doc.dataCriacao).toLocaleDateString() : '-'}
                     </span>
                   </div>
                 ))}

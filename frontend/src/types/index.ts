@@ -105,6 +105,8 @@ export interface BaseQueryParams {
   limit?: number;
   q?: string;
   ativo?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface DepartamentoQueryParams extends BaseQueryParams {}

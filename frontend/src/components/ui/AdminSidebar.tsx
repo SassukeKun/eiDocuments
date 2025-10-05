@@ -27,12 +27,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
+  // Determinar URL do dashboard baseado no role
+  const dashboardHref = user?.role === 'admin' ? '/dashboard/admin' : '/dashboard/editor';
+
   // Itens de menu base (Dashboard)
   const baseMenuItems = [
     {
-      title: user?.role === 'admin' ? 'Dashboard Admin' : 'Dashboard',
+      title: user?.role === 'admin' ? 'Dashboard Admin' : 'Dashboard Editor',
       icon: Home,
-      href: '/dashboard/admin', // Editor e Admin sempre vão para /dashboard/admin
+      href: dashboardHref,
       description: 'Visão geral do sistema'
     }
   ];
@@ -96,7 +99,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
   // User vê apenas dashboard
 
   const isActive = (href: string) => {
-    if (href === '/dashboard/admin') {
+    if (href === '/dashboard/admin' || href === '/dashboard/editor') {
       return pathname === href;
     }
     return pathname.startsWith(href);
