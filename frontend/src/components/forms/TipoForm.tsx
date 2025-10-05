@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { CreateTipoDocumento, UpdateTipoDocumento, TipoDocumento, CategoriaDocumento } from '@/types';
 import { useTipos } from '@/hooks/useTipos';
 import { useCategorias } from '@/hooks/useCategorias';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TipoFormProps {
   tipo?: TipoDocumento | null;
@@ -15,7 +16,8 @@ const TipoForm: React.FC<TipoFormProps> = ({
   onSuccess
 }) => {
   const { criar, atualizar, verificarCodigo } = useTipos();
-  const { categorias, loading: loadingCategorias, carregar: carregarCategorias } = useCategorias();
+  const { categorias, loading: loadingCategorias, carregar: carregarCategorias, carregarPorDepartamento } = useCategorias();
+  const { user, isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -31,8 +33,18 @@ const TipoForm: React.FC<TipoFormProps> = ({
 
   // Carregar categorias ao montar o componente
   useEffect(() => {
-    carregarCategorias();
-  }, [carregarCategorias]);
+    const loadCategorias = async () => {
+      if (isAdmin()) {
+        // Admin vê todas as categorias
+        carregarCategorias({ ativo: true });
+      } else if (user?.departamento?._id) {
+        // Editor/User vê apenas categorias do seu departamento
+        await carregarPorDepartamento(user.departamento._id, true);
+      }
+    };
+    
+    loadCategorias();
+  }, [isAdmin, user, carregarCategorias, carregarPorDepartamento]);
 
   useEffect(() => {
     if (tipo) {

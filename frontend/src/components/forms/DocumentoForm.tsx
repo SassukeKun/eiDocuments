@@ -7,6 +7,7 @@ import { useDocumentos } from '@/hooks/useDocumentos';
 import { useDepartamentos } from '@/hooks/useDepartamentos';
 import { useCategorias } from '@/hooks/useCategorias';
 import { useTipos } from '@/hooks/useTipos';
+import { useAuth } from '@/hooks/useAuth';
 import { Upload, X, FileText } from 'lucide-react';
 
 interface DocumentoFormProps {
@@ -26,6 +27,7 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
   const { obterParaSelect: obterDepartamentos } = useDepartamentos();
   const { obterParaSelect: obterCategorias } = useCategorias();
   const { obterParaSelect: obterTipos } = useTipos();
+  const { user, isAdmin } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -35,6 +37,7 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
   const [departamentos, setDepartamentos] = useState<{ value: string; label: string }[]>([]);
   const [categorias, setCategorias] = useState<{ value: string; label: string }[]>([]);
   const [tipos, setTipos] = useState<{ value: string; label: string }[]>([]);
+  const [tiposFiltrados, setTiposFiltrados] = useState<{ value: string; label: string }[]>([]);
   
   const [formData, setFormData] = useState<CreateDocumento>({
     titulo: '',
@@ -113,15 +116,19 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
 
   const loadSelectData = async () => {
     try {
-      const [depsData, tiposData] = await Promise.all([
-        obterDepartamentos(),
-        obterTipos()
-      ]);
+      const depsData = isAdmin() 
+        ? await obterDepartamentos() 
+        : user?.departamento?._id 
+          ? [{ value: user.departamento._id, label: user.departamento.nome || 'Meu Departamento' }]
+          : [];
       
       setDepartamentos(depsData);
-      setTipos(tiposData);
       
-      // Categorias serão carregadas quando departamento for selecionado
+      // Se editor/user, pré-selecionar departamento e carregar categorias
+      if (!isAdmin() && user?.departamento?._id) {
+        setFormData(prev => ({ ...prev, departamento: user.departamento._id }));
+        loadCategorias(user.departamento._id);
+      }
     } catch (error) {
       console.error('Erro ao carregar dados para selects:', error);
     }
@@ -133,7 +140,7 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
       loadCategorias(formData.departamento);
     } else {
       setCategorias([]);
-      setFormData(prev => ({ ...prev, categoria: '' }));
+      setFormData(prev => ({ ...prev, categoria: '', tipo: '' }));
     }
   }, [formData.departamento]);
 
@@ -141,11 +148,51 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
     try {
       const categoriesData = await obterCategorias(departamentoId);
       setCategorias(categoriesData);
+      
+      // Também carregar tipos desse departamento
+      await loadTiposDoDepartamento(departamentoId);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
       setCategorias([]);
     }
   };
+
+  const loadTiposDoDepartamento = async (departamentoId: string) => {
+    try {
+      // Buscar todos os tipos e filtrar por departamento via categorias
+      const allTipos = await obterTipos();
+      const categoriasIds = categorias.map(c => c.value);
+      
+      // Se ainda não temos categorias carregadas, buscar do backend
+      if (categoriasIds.length === 0) {
+        const categoriesData = await obterCategorias(departamentoId);
+        const catIds = categoriesData.map(c => c.value);
+        // Filtrar tipos que pertencem a essas categorias (isso vai requerer dados completos)
+        setTipos(allTipos); // Por enquanto carregar todos
+      } else {
+        setTipos(allTipos);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tipos:', error);
+      setTipos([]);
+    }
+  };
+
+  // Filtrar tipos por categoria selecionada
+  useEffect(() => {
+    if (formData.categoria && tipos.length > 0) {
+      // Como obterTipos não aceita parâmetros, vamos filtrar localmente
+      // Mas isso requer que os tipos tenham a informação da categoria
+      // Por ora, mostrar todos os tipos quando uma categoria é selecionada
+      setTiposFiltrados(tipos);
+    } else {
+      setTiposFiltrados([]);
+      // Limpar tipo selecionado se categoria mudar
+      if (formData.tipo && !formData.categoria) {
+        setFormData(prev => ({ ...prev, tipo: '' }));
+      }
+    }
+  }, [formData.categoria, tipos]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -419,10 +466,12 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
               value={formData.tipo}
               onChange={handleInputChange}
               className={`mt-1 block w-full rounded-md border ${errors.tipo ? 'border-red-300' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm`}
-              disabled={loading}
+              disabled={loading || !formData.categoria}
             >
-              <option value="">Selecione um tipo</option>
-              {tipos.map(tipo => (
+              <option value="">
+                {!formData.categoria ? 'Selecione uma categoria primeiro' : 'Selecione um tipo'}
+              </option>
+              {tiposFiltrados.map(tipo => (
                 <option key={tipo.value} value={tipo.value}>
                   {tipo.label}
                 </option>

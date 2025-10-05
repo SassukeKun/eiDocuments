@@ -80,10 +80,16 @@ export interface SingleDepartmentStats {
       _id: string;
       titulo: string;
       dataCriacao: string;
-      categoria: { nome: string };
-      tipo: { nome: string };
-      usuario: { nome: string };
+      categoria?: { nome: string };
+      tipo?: { nome: string };
+      usuario?: { nome: string };
     }>;
+  };
+  categorias: {
+    total: number;
+  };
+  tipos: {
+    total: number;
   };
 }
 

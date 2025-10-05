@@ -44,6 +44,13 @@ const EditorDashboardPage = () => {
     refetch 
   } = useMyDepartmentStats();
 
+  // Debug
+  console.log('🔍 Editor Dashboard Debug:');
+  console.log('👤 User:', user);
+  console.log('📊 Stats:', stats);
+  console.log('⚠️ Error:', error);
+  console.log('⏳ Loading:', loading);
+
   // Documentos recentes do departamento
   const recentDocuments: Document[] = useMemo(() => {
     if (!stats?.documentos?.recentes) return [];
@@ -91,13 +98,29 @@ const EditorDashboardPage = () => {
               <div>
                 <h3 className="text-sm font-medium text-red-800">Erro ao carregar estatísticas</h3>
                 <p className="text-sm text-red-600 mt-1">{error}</p>
+                <p className="text-xs text-red-500 mt-2">
+                  Dica: Tente fazer logout e login novamente para atualizar suas credenciais.
+                </p>
               </div>
             </div>
           </div>
         )}
 
+        {/* Loading State */}
+        {loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Total Documentos */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -149,17 +172,41 @@ const EditorDashboardPage = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Categorias</p>
                 <p className="text-3xl font-bold text-purple-600 mt-2">
-                  {loading ? "-" : formatNumber(stats?.documentos?.porCategoria?.length || 0)}
+                  {loading ? "-" : formatNumber(stats?.categorias?.total || 0)}
                 </p>
               </div>
               <div className="p-3 bg-purple-100 rounded-full">
                 <FolderOpen className="w-6 h-6 text-purple-600" />
               </div>
             </div>
+            <p className="text-xs text-gray-500 mt-2">Categorias do departamento</p>
           </div>
         </div>
+        )}
+
+        {/* Second Row - Tipos */}
+        {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
+          {/* Tipos de Documento */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Tipos de Documento</p>
+                <p className="text-3xl font-bold text-indigo-600 mt-2">
+                  {loading ? "-" : formatNumber(stats?.tipos?.total || 0)}
+                </p>
+              </div>
+              <div className="p-3 bg-indigo-100 rounded-full">
+                <File className="w-6 h-6 text-indigo-600" />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Tipos disponíveis no departamento</p>
+          </div>
+        </div>
+        )}
 
         {/* Charts Row */}
+        {!loading && !error && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Documentos por Categoria */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -243,8 +290,10 @@ const EditorDashboardPage = () => {
             )}
           </div>
         </div>
+        )}
 
         {/* Recent Documents */}
+        {!loading && !error && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -299,6 +348,7 @@ const EditorDashboardPage = () => {
             </div>
           )}
         </div>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
