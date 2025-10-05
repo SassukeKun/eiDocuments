@@ -11,8 +11,10 @@ import { FolderOpen, Edit, Trash2, Eye } from 'lucide-react';
 import { CategoriaDocumento } from '@/types';
 import { useCategorias } from '@/hooks/useCategorias';
 import { usePaginatedData } from '@/hooks/usePaginatedData';
+import { useAuth } from '@/hooks/useAuth';
 
 const CategoriasPage = () => {
+  const { user, isAdmin } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedCategoria, setSelectedCategoria] = useState<CategoriaDocumento | null>(null);
@@ -22,9 +24,23 @@ const CategoriasPage = () => {
     remover
   } = useCategorias();
 
+  // Determinar filtro de departamento baseado no role
+  // Editor: apenas categorias do seu departamento
+  // Admin: todas as categorias
+  const getDepartmentId = () => {
+    if (user?.role === 'editor' && user?.departamento) {
+      return typeof user.departamento === 'string' 
+        ? user.departamento 
+        : user.departamento._id;
+    }
+    return undefined; // Admin vê tudo
+  };
+
+  const departmentFilter = getDepartmentId();
+
   // Hook de paginação com dados da API
   const {
-    data: categorias,
+    data: allCategorias,
     loading,
     error,
     searchQuery,
@@ -36,6 +52,18 @@ const CategoriasPage = () => {
     fetchData: carregarPaginado,
     initialItemsPerPage: 10
   });
+
+  // Filtrar categorias baseado no departamento (apenas para Editor)
+  const categorias = React.useMemo(() => {
+    if (!departmentFilter) return allCategorias; // Admin vê tudo
+    
+    return allCategorias.filter(cat => {
+      const catDept = typeof cat.departamento === 'string' 
+        ? cat.departamento 
+        : cat.departamento?._id;
+      return catDept === departmentFilter;
+    });
+  }, [allCategorias, departmentFilter]);
 
   useEffect(() => {
     // O usePaginatedData já carrega os dados automaticamente

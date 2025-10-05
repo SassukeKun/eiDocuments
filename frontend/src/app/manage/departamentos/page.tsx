@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import ManageLayout from '@/components/ui/ManageLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
@@ -14,10 +15,18 @@ import { usePaginatedData } from '@/hooks/usePaginatedData';
 import { useAuth } from '@/hooks/useAuth';
 
 const DepartamentosPage = () => {
-  const { isAdmin, canAccessAllDepartments } = useAuth();
+  const router = useRouter();
+  const { isAdmin, canAccessAllDepartments, loading: authLoading } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedDepartamento, setSelectedDepartamento] = useState<Departamento | null>(null);
+  
+  // Verificar permissões - apenas admin pode gerenciar departamentos
+  useEffect(() => {
+    if (!authLoading && !isAdmin()) {
+      router.push('/dashboard');
+    }
+  }, [authLoading, isAdmin, router]);
   
   const {
     carregarPaginado,

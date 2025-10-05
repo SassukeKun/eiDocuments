@@ -146,10 +146,27 @@ export class DocumentosService {
 
   // Download de documento
   static async download(id: string): Promise<Blob> {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api'}/documentos/${id}/download`);
+    // Opção 1: Usar endpoint do backend (atual - pode ter problemas de proxy)
+    // const response = await fetch(
+    //   `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api'}/documentos/${id}/download`,
+    //   { credentials: 'include' }
+    // );
+    
+    // Opção 2 (MELHOR): Buscar a URL direta do Cloudinary e baixar de lá
+    const documentoResponse = await this.buscarPorId(id);
+    const secureUrl = documentoResponse.data?.arquivo?.secureUrl;
+    
+    if (!secureUrl) {
+      throw new Error('URL do arquivo não encontrada');
+    }
+    
+    // Baixar diretamente do Cloudinary (sem passar pelo backend)
+    const response = await fetch(secureUrl);
+    
     if (!response.ok) {
       throw new Error(`Erro no download: ${response.status}`);
     }
+    
     return response.blob();
   }
 

@@ -27,31 +27,23 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  // Apenas itens administrativos
-  const adminMenuItems = [
+  // Itens de menu base (Dashboard)
+  const baseMenuItems = [
     {
-      title: 'Dashboard Admin',
+      title: user?.role === 'admin' ? 'Dashboard Admin' : 'Dashboard',
       icon: Home,
-      href: '/dashboard/admin',
+      href: user?.role === 'admin' ? '/dashboard/admin' : '/dashboard/user',
       description: 'Visão geral do sistema'
-    },
+    }
+  ];
+
+  // Itens comuns para Editor e Admin
+  const managerMenuItems = [
     {
       title: 'Gerenciar Documentos',
       icon: FileText,
       href: '/manage/documentos',
-      description: 'Gerenciar todos os documentos'
-    },
-    {
-      title: 'Gerenciar Usuários',
-      icon: Users,
-      href: '/manage/usuarios',
-      description: 'Gerenciar usuários do sistema'
-    },
-    {
-      title: 'Departamentos',
-      icon: Building2,
-      href: '/manage/departamentos',
-      description: 'Gerenciar departamentos'
+      description: 'Gerenciar documentos'
     },
     {
       title: 'Categorias',
@@ -64,14 +56,44 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
       icon: FileType,
       href: '/manage/tipos',
       description: 'Gerenciar tipos de documento'
-    },
-    {
-      title: 'Relatórios',
-      icon: BarChart3,
-      href: '/manage/relatorios',
-      description: 'Relatórios do sistema'
     }
   ];
+
+  // Itens exclusivos de Admin (Usuários e Departamentos)
+  const adminOnlyMenuItems = [
+    {
+      title: 'Gerenciar Usuários',
+      icon: Users,
+      href: '/manage/usuarios',
+      description: 'Gerenciar usuários do sistema'
+    },
+    {
+      title: 'Departamentos',
+      icon: Building2,
+      href: '/manage/departamentos',
+      description: 'Gerenciar departamentos'
+    }
+  ];
+
+  // Item de Relatórios
+  const reportsMenuItem = {
+    title: 'Relatórios',
+    icon: BarChart3,
+    href: '/manage/relatorios',
+    description: 'Relatórios do sistema'
+  };
+
+  // Montar menu baseado no role do usuário
+  let menuItems = baseMenuItems;
+
+  if (user?.role === 'admin') {
+    // Admin vê tudo
+    menuItems = [...baseMenuItems, ...managerMenuItems, ...adminOnlyMenuItems, reportsMenuItem];
+  } else if (user?.role === 'editor') {
+    // Editor vê apenas itens de gerenciamento (SEM Usuários e Departamentos)
+    menuItems = [...baseMenuItems, ...managerMenuItems, reportsMenuItem];
+  }
+  // User vê apenas dashboard
 
   const isActive = (href: string) => {
     if (href === '/dashboard/admin') {
@@ -118,7 +140,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
 
       {/* Menu Items */}
       <nav className="flex-1 p-4 space-y-2">
-        {adminMenuItems.map((item) => {
+        {menuItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
           
@@ -155,7 +177,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
           <div className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg mb-2">
             <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
               <span className="text-xs font-medium text-white">
-                {user.nome?.charAt(0) || user.username?.charAt(0) || 'A'}
+                {user.nome?.charAt(0) || user.username?.charAt(0) || 'U'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
@@ -163,7 +185,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
                 {user.nome || user.username}
               </div>
               <div className="text-xs text-red-500 font-medium">
-                Administrador
+                {user.role === 'admin' && 'Administrador'}
+                {user.role === 'editor' && 'Gerente'}
+                {user.role === 'user' && 'Usuário'}
               </div>
             </div>
           </div>

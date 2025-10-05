@@ -64,8 +64,8 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     }
   ];
 
-  // Área de Administração
-  const adminMenuItems = [
+  // Área de Administração - APENAS ADMIN
+  const adminOnlyMenuItems = [
     {
       title: 'Dashboard Admin',
       icon: Home,
@@ -104,10 +104,45 @@ const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     }
   ];
 
-  // Determinar baseado no role único do usuário autenticado
-  // Admin e Editor têm acesso ao menu completo (área de usuário + área admin)
-  const isAdmin = user?.role === 'admin' || user?.role === 'editor' || false;
-  const menuItems = isAdmin ? [...userMenuItems, ...adminMenuItems] : userMenuItems;
+  // Área de Gerenciamento - EDITOR (Gerente Departamental)
+  const editorMenuItems = [
+    {
+      title: 'Dashboard Admin',
+      icon: Home,
+      href: '/dashboard/admin',
+      description: 'Visão geral do departamento'
+    },
+    {
+      title: 'Gerenciar Documentos',
+      icon: FileText,
+      href: '/manage/documentos',
+      description: 'Gerenciar documentos do departamento'
+    },
+    {
+      title: 'Categorias do Departamento',
+      icon: FolderOpen,
+      href: '/manage/categorias',
+      description: 'Gerenciar categorias do seu departamento'
+    },
+    {
+      title: 'Tipos',
+      icon: FileType,
+      href: '/manage/tipos',
+      description: 'Ver tipos de documento'
+    }
+  ];
+
+  // Determinar menu baseado no role único do usuário autenticado
+  let menuItems = userMenuItems;
+  
+  if (user?.role === 'admin') {
+    // Admin vê tudo: área de usuário + área admin completa
+    menuItems = [...userMenuItems, ...adminOnlyMenuItems];
+  } else if (user?.role === 'editor') {
+    // Editor vê: área de usuário + área de gerenciamento limitada (sem usuários e departamentos)
+    menuItems = [...userMenuItems, ...editorMenuItems];
+  }
+  // User vê apenas userMenuItems (já definido acima)
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
