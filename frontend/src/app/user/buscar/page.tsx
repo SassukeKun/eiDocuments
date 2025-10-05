@@ -17,12 +17,15 @@ import {
 } from 'lucide-react';
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
+import { DocumentPreview } from '@/components/ui/DocumentPreview';
 
 const BuscarDocumentosPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Documento[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedDocumento, setSelectedDocumento] = useState<Documento | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [filtros, setFiltros] = useState({
     categoria: '',
     departamento: '',
@@ -75,8 +78,8 @@ const BuscarDocumentosPage = () => {
   };
 
   const handleView = (documento: Documento) => {
-    // TODO: Implementar visualização de documento
-    console.log('Visualizar documento:', documento);
+    setSelectedDocumento(documento);
+    setIsPreviewOpen(true);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -203,7 +206,7 @@ const BuscarDocumentosPage = () => {
       label: 'Download',
       icon: <Download className="w-4 h-4" />,
       onClick: handleDownload,
-      variant: 'primary',
+      variant: 'success',
     },
     {
       key: 'view',
@@ -353,7 +356,6 @@ const BuscarDocumentosPage = () => {
               onSort={(column, direction) => {
                 console.log('Ordenar por:', column, direction);
               }}
-              showPagination={false}
             />
           </div>
         )}
@@ -379,6 +381,19 @@ const BuscarDocumentosPage = () => {
               </ul>
             </div>
           </div>
+        )}
+
+        {/* Modal de Preview */}
+        {selectedDocumento && (
+          <DocumentPreview
+            isOpen={isPreviewOpen}
+            onClose={() => {
+              setIsPreviewOpen(false);
+              setSelectedDocumento(null);
+            }}
+            documento={selectedDocumento}
+            onDownload={() => handleDownload(selectedDocumento)}
+          />
         )}
       </div>
     </UserLayout>

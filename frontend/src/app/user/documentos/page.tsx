@@ -11,12 +11,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { DocumentosService } from '@/services/documentosService';
 import DocumentoViewModal from '@/components/details/DocumentoViewModal';
 import DocumentoEditModal from '@/components/forms/DocumentoEditModal';
+import { DocumentPreview } from '@/components/ui/DocumentPreview';
 
 const DocumentosDepartamentoPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDocumento, setSelectedDocumento] = useState<Documento | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { user } = useAuth();
   
   const {
@@ -58,7 +60,12 @@ const DocumentosDepartamentoPage = () => {
 
   const handleView = (documento: Documento) => {
     setSelectedDocumento(documento);
-    setIsViewModalOpen(true);
+    setIsViewModalOpen(true); // Abre modal de detalhes
+  };
+
+  const handlePreview = (documento: Documento) => {
+    setSelectedDocumento(documento);
+    setIsPreviewOpen(true); // Abre preview do documento
   };
 
   const handleEdit = (documento: Documento) => {
@@ -308,8 +315,6 @@ const DocumentosDepartamentoPage = () => {
           onSearch={handleSearch}
           onFilter={() => console.log('Filtrar documentos')}
           searchPlaceholder="Pesquisar documentos..."
-          showAddButton={false}
-          showExportButton={false}
         />
 
         <DataTable
@@ -324,6 +329,20 @@ const DocumentosDepartamentoPage = () => {
         />
 
         {/* Modais */}
+        {/* Preview do Documento */}
+        {selectedDocumento && (
+          <DocumentPreview
+            isOpen={isPreviewOpen}
+            onClose={() => {
+              setIsPreviewOpen(false);
+              setSelectedDocumento(null);
+            }}
+            documento={selectedDocumento}
+            onDownload={() => handleDownload(selectedDocumento)}
+          />
+        )}
+
+        {/* Detalhes do Documento */}
         <DocumentoViewModal
           documento={selectedDocumento}
           isOpen={isViewModalOpen}
@@ -333,8 +352,10 @@ const DocumentosDepartamentoPage = () => {
           }}
           onEdit={handleEdit}
           onDownload={handleDownload}
+          onPreview={handlePreview}
         />
 
+        {/* Edição do Documento */}
         <DocumentoEditModal
           documento={selectedDocumento}
           isOpen={isEditModalOpen}

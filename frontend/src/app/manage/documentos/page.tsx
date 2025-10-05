@@ -6,6 +6,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
 import DocumentoForm from '@/components/forms/DocumentoForm';
 import DocumentoDetail from '@/components/details/DocumentoDetail';
+import { DocumentPreview } from '@/components/ui/DocumentPreview';
 import { FileText, Edit, Trash2, Eye, Download, Building2, FolderOpen } from 'lucide-react';
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
@@ -14,6 +15,7 @@ import { usePaginatedData } from '@/hooks/usePaginatedData';
 const DocumentosPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedDocumento, setSelectedDocumento] = useState<Documento | null>(null);
   
   const {
@@ -111,6 +113,11 @@ const DocumentosPage = () => {
   const handleDetailClose = () => {
     setIsDetailOpen(false);
     setSelectedDocumento(null);
+  };
+
+  const handlePreview = (documento: Documento) => {
+    setSelectedDocumento(documento);
+    setIsPreviewOpen(true);
   };
 
   const formatFileSize = (bytes: number) => {
