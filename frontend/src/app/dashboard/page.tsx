@@ -13,25 +13,23 @@ const DashboardPage = () => {
       // Redirecionar baseado no role único do usuário
       // admin e editor vão para dashboard admin
       if (user.role === 'admin' || user.role === 'editor') {
-        router.push('/dashboard/admin');
+        router.replace('/dashboard/admin');
       } else {
-        router.push('/dashboard/user');
+        router.replace('/dashboard/user');
       }
     } else if (!loading && !user) {
       // Se não autenticado, redirecionar para login
-      router.push('/login');
+      router.replace('/login');
     }
   }, [router, user, loading]);
 
-  // Loading state enquanto redireciona
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Carregando dashboard...</p>
-      </div>
-    </div>
-  );
+  // Não renderizar nada enquanto redireciona
+  if (loading || user) {
+    return null;
+  }
+
+  // Loading state enquanto redireciona - não renderizar nenhum layout
+  return null;
 };
 
 export default DashboardPage;

@@ -32,7 +32,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '' }) => {
     {
       title: user?.role === 'admin' ? 'Dashboard Admin' : 'Dashboard',
       icon: Home,
-      href: user?.role === 'admin' ? '/dashboard/admin' : '/dashboard/user',
+      href: '/dashboard/admin', // Editor e Admin sempre vão para /dashboard/admin
       description: 'Visão geral do sistema'
     }
   ];

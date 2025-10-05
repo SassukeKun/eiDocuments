@@ -28,6 +28,7 @@ export interface TipoDocumento {
   nome: string;
   codigo: string;
   descricao?: string;
+  categoria: string | CategoriaDocumento; // ID ou objeto populado
   ativo: boolean;
   dataCriacao: string;
   dataAtualizacao: string;
@@ -152,6 +153,7 @@ export interface CreateTipoDocumento {
   nome: string;
   codigo: string;
   descricao?: string;
+  categoria: string; // ID da categoria
   ativo?: boolean;
 }
 
@@ -221,6 +223,7 @@ export interface CategoriaQueryParams extends BaseQueryParams {
 
 export interface TipoQueryParams extends BaseQueryParams {
   ativo?: boolean;
+  categoria?: string; // Filtrar por categoria
 }
 
 export interface DocumentoQueryParams extends BaseQueryParams {

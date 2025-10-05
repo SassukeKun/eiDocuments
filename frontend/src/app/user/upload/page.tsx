@@ -66,6 +66,7 @@ const UploadPage = () => {
   const [newTag, setNewTag] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [tiposFiltrados, setTiposFiltrados] = useState<typeof tipos>([]);
   const [formData, setFormData] = useState<DocumentForm>({
     titulo: '',
     descricao: '',
@@ -98,6 +99,33 @@ const UploadPage = () => {
     
     loadData();
   }, [carregarTipos, carregarPorDepartamento, userDepartmentId]);
+
+  // Filtrar tipos baseado na categoria selecionada
+  useEffect(() => {
+    if (!formData.categoria) {
+      setTiposFiltrados([]);
+      return;
+    }
+
+    const filtrados = tipos.filter(tipo => {
+      // Se tipo.categoria é string (ID)
+      if (typeof tipo.categoria === 'string') {
+        return tipo.categoria === formData.categoria;
+      }
+      // Se tipo.categoria é objeto populado
+      return tipo.categoria._id === formData.categoria;
+    });
+
+    setTiposFiltrados(filtrados);
+
+    // Se o tipo selecionado não pertence à categoria, limpar
+    if (formData.tipo) {
+      const tipoValido = filtrados.find(t => t._id === formData.tipo);
+      if (!tipoValido) {
+        setFormData(prev => ({ ...prev, tipo: '' }));
+      }
+    }
+  }, [formData.categoria, tipos, formData.tipo]);
 
   // Atualizar responsável quando o usuário mudar
   useEffect(() => {
@@ -618,9 +646,14 @@ const UploadPage = () => {
                 onChange={(e) => handleInputChange('tipo', e.target.value)}
                 className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
+                disabled={!formData.categoria || loadingTipos}
               >
-                <option value="">Selecione um tipo...</option>
-                {tipos.map((tipo) => (
+                <option value="">
+                  {!formData.categoria 
+                    ? 'Selecione uma categoria primeiro...' 
+                    : 'Selecione um tipo...'}
+                </option>
+                {tiposFiltrados.map((tipo) => (
                   <option key={tipo._id} value={tipo._id}>
                     {tipo.nome}
                   </option>
@@ -629,7 +662,14 @@ const UploadPage = () => {
               {loadingTipos && (
                 <p className="text-xs text-blue-500 mt-1">Carregando tipos...</p>
               )}
-              <p className="text-xs text-gray-500 mt-1">Selecione o tipo de documento</p>
+              {formData.categoria && tiposFiltrados.length === 0 && !loadingTipos && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ Nenhum tipo disponível para esta categoria. Crie um tipo primeiro.
+                </p>
+              )}
+              {!formData.categoria && (
+                <p className="text-xs text-gray-500 mt-1">Selecione uma categoria para ver os tipos disponíveis</p>
+              )}
             </div>
 
             {/* Tipo de Movimento */}

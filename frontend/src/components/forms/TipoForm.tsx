@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { CreateTipoDocumento, UpdateTipoDocumento, TipoDocumento } from '@/types';
+import { CreateTipoDocumento, UpdateTipoDocumento, TipoDocumento, CategoriaDocumento } from '@/types';
 import { useTipos } from '@/hooks/useTipos';
+import { useCategorias } from '@/hooks/useCategorias';
 
 interface TipoFormProps {
   tipo?: TipoDocumento | null;
@@ -14,6 +15,7 @@ const TipoForm: React.FC<TipoFormProps> = ({
   onSuccess
 }) => {
   const { criar, atualizar, verificarCodigo } = useTipos();
+  const { categorias, loading: loadingCategorias, carregar: carregarCategorias } = useCategorias();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -21,10 +23,16 @@ const TipoForm: React.FC<TipoFormProps> = ({
     nome: '',
     codigo: '',
     descricao: '',
+    categoria: '',
     ativo: true
   });
 
   const isEditing = !!tipo;
+
+  // Carregar categorias ao montar o componente
+  useEffect(() => {
+    carregarCategorias();
+  }, [carregarCategorias]);
 
   useEffect(() => {
     if (tipo) {
@@ -33,6 +41,7 @@ const TipoForm: React.FC<TipoFormProps> = ({
         nome: tipo.nome,
         codigo: tipo.codigo,
         descricao: tipo.descricao || '',
+        categoria: typeof tipo.categoria === 'string' ? tipo.categoria : tipo.categoria._id,
         ativo: tipo.ativo
       });
     } else {
@@ -41,13 +50,14 @@ const TipoForm: React.FC<TipoFormProps> = ({
         nome: '',
         codigo: '',
         descricao: '',
+        categoria: '',
         ativo: true
       });
     }
     setErrors({});
   }, [tipo]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -71,6 +81,10 @@ const TipoForm: React.FC<TipoFormProps> = ({
       newErrors.codigo = 'Código é obrigatório';
     } else if (!/^[A-Z0-9_-]+$/.test(formData.codigo)) {
       newErrors.codigo = 'Código deve conter apenas letras maiúsculas, números, hífen ou underscore';
+    }
+
+    if (!formData.categoria) {
+      newErrors.categoria = 'Categoria é obrigatória';
     }
 
     setErrors(newErrors);
@@ -119,6 +133,39 @@ const TipoForm: React.FC<TipoFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Categoria */}
+        <div>
+          <label htmlFor="categoria" className="block text-sm font-medium text-gray-700">
+            Categoria *
+          </label>
+          <select
+            id="categoria"
+            name="categoria"
+            value={formData.categoria}
+            onChange={handleInputChange}
+            className={`mt-1 block w-full rounded-md border ${errors.categoria ? 'border-red-300' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm`}
+            disabled={loading || loadingCategorias}
+          >
+            <option value="">Selecione uma categoria</option>
+            {categorias.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.nome} ({cat.codigo})
+                {typeof cat.departamento === 'object' && cat.departamento?.nome 
+                  ? ` - ${cat.departamento.nome}` 
+                  : ''}
+              </option>
+            ))}
+          </select>
+          {errors.categoria && (
+            <p className="mt-1 text-sm text-red-600">{errors.categoria}</p>
+          )}
+          {categorias.length === 0 && !loadingCategorias && (
+            <p className="mt-1 text-sm text-amber-600">
+              ⚠️ Nenhuma categoria disponível. Crie uma categoria primeiro.
+            </p>
+          )}
+        </div>
+
         {/* Nome */}
         <div>
           <label htmlFor="nome" className="block text-sm font-medium text-gray-700">
