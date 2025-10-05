@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import DetailModal from '@/components/ui/DetailModal';
-import { Documento, CategoriaDocumento, TipoDocumento, Departamento, Usuario } from '@/types';
+import { DocumentPreview } from '@/components/ui/DocumentPreview';
+import { Documento, CategoriaDocumento } from '@/types';
 import { 
   FileText, 
   Calendar, 
   Building2, 
   User, 
-  FolderOpen,
   File,
   Download,
   Tag,
@@ -19,7 +19,6 @@ import {
   CheckCircle,
   XCircle,
   Archive,
-  ExternalLink
 } from 'lucide-react';
 
 interface DocumentoDetailProps {
@@ -83,7 +82,7 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
     }
   };
 
-  const getEntityName = (entity: string | any): string => {
+  const getEntityName = (entity: string | { nome?: string; titulo?: string }): string => {
     if (typeof entity === 'string') {
       return 'Carregando...';
     }
@@ -106,132 +105,94 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
   const isImage = documento.arquivo?.format && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(documento.arquivo.format.toLowerCase());
 
   return (
-    <DetailModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Detalhes do Documento"
-      size="xl"
-    >
-      <div className="space-y-6">
-        {/* Header do Documento */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-4 flex-1">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 pr-4">{documento.titulo}</h3>
-                  <div className="flex items-center space-x-2">
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getMovementColor(documento.tipoMovimento)}`}>
-                      {getMovementIcon(documento.tipoMovimento)}
-                      <span className="ml-1">{getMovementLabel(documento.tipoMovimento)}</span>
-                    </span>
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                      documento.ativo 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {documento.ativo ? (
-                        <>
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Ativo
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Inativo
-                        </>
-                      )}
-                    </span>
-                    {documento.status === 'arquivado' && (
-                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
-                        <Archive className="w-3 h-3 mr-1" />
-                        Arquivado
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {documento.descricao && (
-                  <p className="text-gray-600 mb-3">{documento.descricao}</p>
-                )}
-              </div>
+    <>
+      <DetailModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title=""
+        size="xl"
+      >
+        {/* HEADER DESTACADO */}
+        <div className="rounded-t-lg bg-gradient-to-r from-blue-600 to-blue-400 p-6 flex items-center space-x-4 mb-4">
+          <div className="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center shadow-lg">
+            <FileText className="w-8 h-8 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-2xl font-bold text-white truncate">{documento.titulo}</h2>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getMovementColor(documento.tipoMovimento)} bg-opacity-80`}>{getMovementIcon(documento.tipoMovimento)}<span className="ml-1">{getMovementLabel(documento.tipoMovimento)}</span></span>
+              <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${documento.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{documento.ativo ? (<><CheckCircle className="w-3 h-3 mr-1" />Ativo</>) : (<><XCircle className="w-3 h-3 mr-1" />Inativo</>)}</span>
+              {documento.status === 'arquivado' && (<span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800"><Archive className="w-3 h-3 mr-1" />Arquivado</span>)}
             </div>
           </div>
         </div>
-
-        {/* Informações do Arquivo */}
-        <div>
-          <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
-            <File className="w-4 h-4 mr-2" />
-            Informações do Arquivo
-          </h4>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                  <File className="w-4 h-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{documento.arquivo?.originalName || 'Nome não disponível'}</p>
-                  <p className="text-sm text-gray-500">
-                    {documento.arquivo?.format?.toUpperCase() || 'Formato desconhecido'} • {formatFileSize(documento.arquivo?.size || 0)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={handleDownload}
-                  className="flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                >
-                  <Download className="w-4 h-4 mr-1" />
-                  Download
-                </button>
-              </div>
-            </div>
-            
-            {/* Preview da Imagem */}
-            {isImage && documento.arquivo?.secureUrl && !imageError && (
-              <div className="mt-4">
-                <img
-                  src={documento.arquivo.secureUrl}
-                  alt={documento.titulo}
-                  className="max-w-full h-48 object-cover rounded-lg border border-gray-200"
-                  onError={() => setImageError(true)}
-                />
+        {/* DESCRIÇÃO */}
+        {documento.descricao && (
+          <div className="mb-4 px-6"><p className="text-gray-700 text-base">{documento.descricao}</p></div>
+        )}
+        {/* SEÇÃO ARQUIVO E PREVIEW */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-6 mb-6">
+          <div className="md:col-span-2 flex flex-col items-center justify-center">
+            {isImage && documento.arquivo?.secureUrl && !imageError ? (
+              <img
+                src={documento.arquivo.secureUrl}
+                alt={documento.titulo}
+                className="max-w-full max-h-64 object-contain rounded-lg border border-gray-200 shadow-sm mb-2"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-full h-48 flex items-center justify-center bg-gray-100 rounded-lg border border-gray-200 text-gray-400">
+                <FileText className="w-12 h-12" />
               </div>
             )}
           </div>
+          <div className="flex flex-col justify-between space-y-2">
+            <div>
+              <h4 className="text-md font-semibold text-gray-900 mb-1 flex items-center"><File className="w-4 h-4 mr-2" />Arquivo</h4>
+              <p className="font-medium text-gray-900">{documento.arquivo?.originalName || 'Nome não disponível'}</p>
+              <p className="text-sm text-gray-500">{documento.arquivo?.format?.toUpperCase() || 'Formato desconhecido'} • {formatFileSize(documento.arquivo?.size || 0)}</p>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={handleDownload}
+                className="flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors shadow"
+                title="Download"
+              >
+                <Download className="w-4 h-4 mr-1" />Download
+              </button>
+              {documento.arquivo?.secureUrl && isImage && (
+                <button
+                  onClick={() => setPreviewOpen(true)}
+                  className="flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors shadow"
+                  title="Visualizar em tela cheia"
+                >
+                  <Eye className="w-4 h-4 mr-1" />Visualizar
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-
-        {/* Metadados do Documento */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Classificação */}
-          <div>
-            <h4 className="text-md font-medium text-gray-900 mb-3">Classificação</h4>
+        {/* METADADOS E MOVIMENTO */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 mb-6">
+          <div className="bg-white rounded-xl shadow border border-gray-100 p-4">
+            <h4 className="text-md font-semibold text-gray-900 mb-3">Classificação</h4>
             <div className="space-y-3">
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <Building2 className="w-4 h-4 text-gray-400" />
+              <div className="flex items-center space-x-3">
+                <Building2 className="w-4 h-4 text-blue-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Departamento</p>
                   <p className="text-sm text-gray-600">{getEntityName(documento.departamento)}</p>
                 </div>
               </div>
-              
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div 
-                  className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: getCategoryColor(documento.categoria) }}
-                ></div>
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: getCategoryColor(documento.categoria) }}></div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">Categoria</p>
                   <p className="text-sm text-gray-600">{getEntityName(documento.categoria)}</p>
                 </div>
               </div>
-              
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <File className="w-4 h-4 text-gray-400" />
+              <div className="flex items-center space-x-3">
+                <File className="w-4 h-4 text-purple-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Tipo</p>
                   <p className="text-sm text-gray-600">{getEntityName(documento.tipo)}</p>
@@ -239,59 +200,47 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Informações Específicas do Movimento */}
-          <div>
-            <h4 className="text-md font-medium text-gray-900 mb-3">Detalhes do Movimento</h4>
+          <div className="bg-white rounded-xl shadow border border-gray-100 p-4">
+            <h4 className="text-md font-semibold text-gray-900 mb-3">Movimentação</h4>
             <div className="space-y-3">
-              {documento.tipoMovimento === 'enviado' && (
-                <>
-                  {documento.destinatario && (
-                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                      <Send className="w-4 h-4 text-green-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Destinatário</p>
-                        <p className="text-sm text-gray-600">{documento.destinatario}</p>
-                      </div>
-                    </div>
-                  )}
-                  {documento.dataEnvio && (
-                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                      <Calendar className="w-4 h-4 text-green-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Data de Envio</p>
-                        <p className="text-sm text-gray-600">{formatDate(documento.dataEnvio)}</p>
-                      </div>
-                    </div>
-                  )}
-                </>
+              {documento.tipoMovimento === 'enviado' && documento.destinatario && (
+                <div className="flex items-center space-x-3">
+                  <Send className="w-4 h-4 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Destinatário</p>
+                    <p className="text-sm text-gray-600">{documento.destinatario}</p>
+                  </div>
+                </div>
               )}
-
-              {documento.tipoMovimento === 'recebido' && (
-                <>
-                  {documento.remetente && (
-                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                      <Inbox className="w-4 h-4 text-blue-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Remetente</p>
-                        <p className="text-sm text-gray-600">{documento.remetente}</p>
-                      </div>
-                    </div>
-                  )}
-                  {documento.dataRecebimento && (
-                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                      <Calendar className="w-4 h-4 text-blue-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Data de Recebimento</p>
-                        <p className="text-sm text-gray-600">{formatDate(documento.dataRecebimento)}</p>
-                      </div>
-                    </div>
-                  )}
-                </>
+              {documento.tipoMovimento === 'enviado' && documento.dataEnvio && (
+                <div className="flex items-center space-x-3">
+                  <Calendar className="w-4 h-4 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Data de Envio</p>
+                    <p className="text-sm text-gray-600">{formatDate(documento.dataEnvio)}</p>
+                  </div>
+                </div>
               )}
-
+              {documento.tipoMovimento === 'recebido' && documento.remetente && (
+                <div className="flex items-center space-x-3">
+                  <Inbox className="w-4 h-4 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Remetente</p>
+                    <p className="text-sm text-gray-600">{documento.remetente}</p>
+                  </div>
+                </div>
+              )}
+              {documento.tipoMovimento === 'recebido' && documento.dataRecebimento && (
+                <div className="flex items-center space-x-3">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Data de Recebimento</p>
+                    <p className="text-sm text-gray-600">{formatDate(documento.dataRecebimento)}</p>
+                  </div>
+                </div>
+              )}
               {documento.tipoMovimento === 'interno' && documento.responsavel && (
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
                   <User className="w-4 h-4 text-gray-600" />
                   <div>
                     <p className="text-sm font-medium text-gray-900">Responsável</p>
@@ -299,8 +248,7 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
                   </div>
                 </div>
               )}
-
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
                 <User className="w-4 h-4 text-gray-400" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Criado por</p>
@@ -310,19 +258,15 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
             </div>
           </div>
         </div>
-
-        {/* Tags */}
+        {/* TAGS */}
         {documento.tags && documento.tags.length > 0 && (
-          <div>
-            <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
-              <Tag className="w-4 h-4 mr-2" />
-              Tags
-            </h4>
+          <div className="px-6 mb-6">
+            <h4 className="text-md font-semibold text-gray-900 mb-2 flex items-center"><Tag className="w-4 h-4 mr-2" />Tags</h4>
             <div className="flex flex-wrap gap-2">
               {documento.tags.map((tag, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                  className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full shadow"
                 >
                   {tag}
                 </span>
@@ -330,13 +274,9 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
             </div>
           </div>
         )}
-
-        {/* Metadados do Sistema */}
-        <div className="border-t pt-4">
-          <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
-            <Clock className="w-4 h-4 mr-2" />
-            Informações do Sistema
-          </h4>
+        {/* METADADOS DO SISTEMA */}
+        <div className="border-t pt-4 px-6">
+          <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center"><Clock className="w-4 h-4 mr-2" />Informações do Sistema</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-500">Data de Criação:</span>
@@ -348,8 +288,15 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
             </div>
           </div>
         </div>
-      </div>
-    </DetailModal>
+      </DetailModal>
+      {/* Document Preview Modal */}
+      <DocumentPreview
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        documento={documento}
+        onDownload={handleDownload}
+      />
+    </>
   );
 };
 

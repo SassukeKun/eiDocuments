@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import statsService from '@/services/statsService';
 import DetailModal from '@/components/ui/DetailModal';
 import { CategoriaDocumento, Departamento } from '@/types';
 import { 
@@ -60,33 +61,20 @@ const CategoriaDetail: React.FC<CategoriaDetailProps> = ({
 
   const loadStats = async () => {
     if (!categoria) return;
-    
     setLoading(true);
     try {
-      // TODO: Implementar chamada real para API
-      // Simulando dados por enquanto
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      // Chamada real para API de estatísticas de categoria
+      const apiStats = await statsService.getCategoryStats();
+      // Encontrar dados da categoria específica
+      const uso = (apiStats.distribuicoes?.usoPorCategoria || []).find(cat => cat.categoria === categoria.nome);
+      // Recentes e usuários são simulados pois não há endpoint dedicado
       setStats({
-        totalDocumentos: Math.floor(Math.random() * 150) + 20,
-        documentosAtivos: Math.floor(Math.random() * 120) + 15,
-        documentosArquivados: Math.floor(Math.random() * 30),
-        ultimoDocumento: {
-          titulo: "Relatório de Despesas Q4",
-          data: new Date().toISOString(),
-          usuario: "João Silva"
-        },
-        usuarios: [
-          { nome: "Maria Santos", quantidade: 25 },
-          { nome: "João Silva", quantidade: 18 },
-          { nome: "Ana Costa", quantidade: 12 },
-          { nome: "Carlos Oliveira", quantidade: 8 }
-        ],
-        documentosRecentes: [
-          { titulo: "Contrato de Prestação de Serviços", data: "2024-01-20", tipo: "Contrato" },
-          { titulo: "Relatório Mensal", data: "2024-01-19", tipo: "Relatório" },
-          { titulo: "Política de Segurança", data: "2024-01-18", tipo: "Política" }
-        ]
+        totalDocumentos: uso?.quantidade || 0,
+        documentosAtivos: 0, // Não disponível
+        documentosArquivados: 0, // Não disponível
+        ultimoDocumento: undefined, // Não disponível
+        usuarios: [], // Não disponível
+        documentosRecentes: [] // Não disponível
       });
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
@@ -197,119 +185,21 @@ const CategoriaDetail: React.FC<CategoriaDetailProps> = ({
             <span className="ml-2 text-gray-600">Carregando estatísticas...</span>
           </div>
         ) : stats && (
-          <>
-            {/* Cards de Estatísticas */}
-            <div>
-              <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Estatísticas de Uso
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-600">Total de Documentos</p>
-                      <p className="text-2xl font-bold text-blue-900">{stats.totalDocumentos}</p>
-                    </div>
-                    <FileText className="w-8 h-8 text-blue-600" />
-                  </div>
+          <div>
+            <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Estatísticas de Uso
+            </h4>
+            <div className="bg-blue-50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600">Total de Documentos</p>
+                  <p className="text-2xl font-bold text-blue-900">{stats.totalDocumentos}</p>
                 </div>
-                
-                <div className="bg-green-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-600">Documentos Ativos</p>
-                      <p className="text-2xl font-bold text-green-900">{stats.documentosAtivos}</p>
-                    </div>
-                    <CheckCircle className="w-8 h-8 text-green-600" />
-                  </div>
-                </div>
-                
-                <div className="bg-orange-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-orange-600">Arquivados</p>
-                      <p className="text-2xl font-bold text-orange-900">{stats.documentosArquivados}</p>
-                    </div>
-                    <Activity className="w-8 h-8 text-orange-600" />
-                  </div>
-                </div>
+                <FileText className="w-8 h-8 text-blue-600" />
               </div>
             </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Usuários Mais Ativos */}
-              <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
-                  <Users className="w-4 h-4 mr-2" />
-                  Usuários Mais Ativos
-                </h4>
-                <div className="space-y-2">
-                  {stats.usuarios.slice(0, 4).map((user, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-blue-600">{index + 1}</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">{user.nome}</span>
-                      </div>
-                      <span className="text-sm text-gray-600">{user.quantidade} docs</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Documentos Recentes */}
-              <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
-                  <Clock className="w-4 h-4 mr-2" />
-                  Documentos Recentes
-                </h4>
-                <div className="space-y-2">
-                  {stats.documentosRecentes.map((doc, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900 truncate">{doc.titulo}</p>
-                          <p className="text-xs text-gray-500">{doc.tipo}</p>
-                        </div>
-                        <span className="text-xs text-gray-400 ml-2">
-                          {new Date(doc.data).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Último Documento */}
-            {stats.ultimoDocumento && (
-              <div>
-                <h4 className="text-md font-medium text-gray-900 mb-3 flex items-center">
-                  <Activity className="w-4 h-4 mr-2" />
-                  Atividade Recente
-                </h4>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center space-x-3">
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: colorStyle.bg }}
-                    >
-                      <FileText className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Último documento criado</p>
-                      <p className="text-sm text-gray-600">{stats.ultimoDocumento.titulo}</p>
-                      <p className="text-xs text-gray-500">
-                        por {stats.ultimoDocumento.usuario} • {formatDate(stats.ultimoDocumento.data)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
+          </div>
         )}
 
         {/* Metadados */}

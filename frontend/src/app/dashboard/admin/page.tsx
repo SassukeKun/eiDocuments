@@ -69,23 +69,43 @@ const AdminDashboardPage = () => {
     refetchAll 
   } = useDashboardStats();
 
-  // Dados mock mantidos para compatibilidade dos departamentos
-  const departments: Department[] = [
-    { id: "rh", name: "Recursos Humanos", color: "bg-blue-500", documentCount: 156, activeUsers: 12, lastActivity: "2 min atrás" },
-    { id: "financeiro", name: "Financeiro", color: "bg-green-500", documentCount: 89, activeUsers: 8, lastActivity: "5 min atrás" },
-    { id: "ti", name: "Tecnologia da Informação", color: "bg-purple-500", documentCount: 234, activeUsers: 15, lastActivity: "1 min atrás" },
-    { id: "marketing", name: "Marketing", color: "bg-pink-500", documentCount: 67, activeUsers: 6, lastActivity: "10 min atrás" },
-    { id: "operacoes", name: "Operações", color: "bg-orange-500", documentCount: 123, activeUsers: 11, lastActivity: "3 min atrás" },
-    { id: "juridico", name: "Jurídico", color: "bg-red-500", documentCount: 45, activeUsers: 4, lastActivity: "15 min atrás" }
-  ];
+  // Dados reais vindos do backend
+  // Departamentos reais vindos do backend
+  const departments: Department[] = useMemo(() => {
+    if (!departmentStats?.data) return [];
+    // departmentStats.data.distribuicoes.documentos: Array<{ departamento: string; quantidade: number }>
+    // Mapear usuários ativos por departamento
+    const usuariosPorDepartamento = (departmentStats.data.distribuicoes?.usuarios || []);
+    return (departmentStats.data.distribuicoes?.documentos || []).map((dept, idx) => {
+      const usuariosDept = usuariosPorDepartamento.find(u => u.departamento === dept.departamento);
+      return {
+        id: dept.departamento?.toLowerCase() || dept.departamento || String(idx),
+        name: dept.departamento || "Departamento",
+        color: "bg-blue-500",
+        documentCount: dept.quantidade || 0,
+        activeUsers: usuariosDept ? usuariosDept.quantidade : 0,
+        lastActivity: "-"
+      };
+    });
+  }, [departmentStats]);
 
-  const documents: Document[] = [
-    { id: "1", title: "Manual do Funcionário 2024", department: "RH", type: "PDF", size: "2.4 MB", uploadedBy: "Maria Silva", uploadDate: "2024-03-15", lastModified: "2024-03-15", tags: ["manual", "funcionário", "2024"], status: "active" },
-    { id: "2", title: "Relatório Financeiro Q1", department: "Financeiro", type: "Excel", size: "1.8 MB", uploadedBy: "João Santos", uploadDate: "2024-03-10", lastModified: "2024-03-12", tags: ["relatório", "financeiro", "Q1"], status: "active" },
-    { id: "3", title: "Política de Segurança TI", department: "TI", type: "PDF", size: "956 KB", uploadedBy: "Ana Costa", uploadDate: "2024-03-08", lastModified: "2024-03-08", tags: ["política", "segurança", "TI"], status: "active" },
-    { id: "4", title: "Campanha Marketing Digital", department: "Marketing", type: "PowerPoint", size: "5.2 MB", uploadedBy: "Pedro Lima", uploadDate: "2024-03-05", lastModified: "2024-03-07", tags: ["campanha", "marketing", "digital"], status: "pending" },
-    { id: "5", title: "Procedimento Operacional Padrão", department: "Operações", type: "Word", size: "1.1 MB", uploadedBy: "Carla Rocha", uploadDate: "2024-03-01", lastModified: "2024-03-03", tags: ["procedimento", "operações", "padrão"], status: "active" },
-  ];
+  // Documentos reais vindos do backend
+  const documents: Document[] = useMemo(() => {
+    if (!documentStats?.data) return [];
+    // documentStats.data.recentes: Array<{ _id, titulo, dataCriacao, departamento, categoria, tipo, usuario }>
+    return (documentStats.data.recentes || []).map((doc) => ({
+      id: doc._id,
+      title: doc.titulo || "Documento",
+      department: doc.departamento?.nome || "-",
+      type: doc.tipo?.nome || "-",
+      size: "-",
+      uploadedBy: "-",
+      uploadDate: doc.dataCriacao || "-",
+      lastModified: doc.dataCriacao || "-",
+      tags: [],
+      status: "active"
+    }));
+  }, [documentStats]);
 
   const calculateGrowth = (current: number, previous: number) => {
     if (previous === 0) return 0;
@@ -108,19 +128,19 @@ const AdminDashboardPage = () => {
 
   const filteredDocuments = useMemo(() => {
     return documents.filter(doc => {
-      const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          doc.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          doc.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          doc.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesDepartment = selectedDepartment === "all" || 
-                               doc.department.toLowerCase() === selectedDepartment.toLowerCase();
+      const matchesSearch = doc.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doc.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doc.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (doc.tags && Array.isArray(doc.tags) && doc.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+      const matchesDepartment = selectedDepartment === "all" ||
+        doc.department?.toLowerCase() === selectedDepartment.toLowerCase();
       return matchesSearch && matchesDepartment;
     });
   }, [documents, searchTerm, selectedDepartment]);
 
   const filteredDepartments = useMemo(() => {
     return departments.filter(dept =>
-      dept.name.toLowerCase().includes(searchTerm.toLowerCase())
+      dept.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [departments, searchTerm]);
 
@@ -301,25 +321,19 @@ const AdminDashboardPage = () => {
                   <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
                 ))}
               </div>
-            ) : (
+            ) : documentStats?.data?.recentes?.length ? (
               <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-700">
-                    {formatNumber(globalStats?.data?.tendencias?.crescimentoSemanal || 0)} novos documentos esta semana
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm text-gray-700">
-                    Taxa de documentos ativos: {globalStats?.data?.tendencias?.taxaAtivos || '0'}%
-                  </span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span className="text-sm text-gray-700">Sistema funcionando normalmente</span>
-                </div>
+                {documentStats.data.recentes.map((doc) => (
+                  <div key={doc._id} className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-gray-700">
+                      {doc.titulo} ({doc.tipo?.nome || '-'}) - {doc.departamento?.nome || '-'} em {doc.dataCriacao ? new Date(doc.dataCriacao).toLocaleDateString() : '-'}
+                    </span>
+                  </div>
+                ))}
               </div>
+            ) : (
+              <div className="text-gray-500 text-sm">Nenhuma atividade recente encontrada.</div>
             )}
           </div>
 
@@ -343,25 +357,25 @@ const AdminDashboardPage = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Documentos Ativos</span>
                   <span className="text-sm font-medium text-green-600">
-                    {formatNumber(globalStats?.data?.resumo?.documentosAtivos || 0)}
+                    {formatNumber(documentStats?.data?.totais?.ativos || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Documentos Arquivados</span>
                   <span className="text-sm font-medium text-gray-600">
-                    {formatNumber(globalStats?.data?.resumo?.documentosArquivados || 0)}
+                    {formatNumber(documentStats?.data?.totais?.arquivados || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total de Documentos</span>
+                  <span className="text-sm font-medium text-blue-600">
+                    {formatNumber(documentStats?.data?.totais?.total || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Crescimento Semanal</span>
-                  <span className="text-sm font-medium text-blue-600">
-                    +{formatNumber(globalStats?.data?.tendencias?.crescimentoSemanal || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Taxa de Atividade</span>
                   <span className="text-sm font-medium text-purple-600">
-                    {globalStats?.data?.tendencias?.taxaAtivos || '0'}%
+                    +{formatNumber(globalStats?.data?.tendencias?.crescimentoSemanal || 0)}
                   </span>
                 </div>
               </div>
