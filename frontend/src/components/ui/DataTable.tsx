@@ -124,7 +124,11 @@ const DataTable = <T extends Record<string, any>>({
     },
   ];
 
-  const allActions = actions.length > 0 ? actions : defaultActions;
+  // Se actions for explicitamente um array vazio, não mostrar nenhuma ação
+  // Se actions for undefined, usar defaultActions
+  const allActions = actions !== undefined 
+    ? actions 
+    : defaultActions;
 
   if (loading) {
     return (

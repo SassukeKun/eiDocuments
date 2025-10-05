@@ -200,6 +200,17 @@ const UserDashboardPage = () => {
     success(`Download iniciado: ${doc.title}`);
   };
 
+  const handleDownloadDocumento = async (documento: Documento) => {
+    try {
+      // Usar o serviço de documentos para baixar
+      const { DocumentosService } = await import('@/services/documentosService');
+      await DocumentosService.baixar(documento._id);
+      success(`Download iniciado: ${documento.titulo}`);
+    } catch (err) {
+      console.error('Erro ao baixar documento:', err);
+    }
+  };
+
   return (
     <UserLayout>
       <div>
@@ -465,7 +476,7 @@ const UserDashboardPage = () => {
             isOpen={isDetailOpen}
             onClose={() => setIsDetailOpen(false)}
             documento={selectedDocument}
-            onDownload={undefined}
+            onDownload={handleDownloadDocumento}
           />
         </div>
 

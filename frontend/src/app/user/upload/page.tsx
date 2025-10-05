@@ -57,9 +57,10 @@ const UploadPage = () => {
   const router = useRouter();
   const { user } = useAuth();
   const { tipos, carregar: carregarTipos, loading: loadingTipos } = useTipos();
-  const { categorias, carregar: carregarCategorias, loading: loadingCategorias } = useCategorias();
+  const { categorias, carregarPorDepartamento, loading: loadingCategorias } = useCategorias();
   
   const userDepartment = user?.departamento?.nome || "Departamento não identificado";
+  const userDepartmentId = user?.departamento?._id;
   
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [newTag, setNewTag] = useState("");
@@ -80,13 +81,15 @@ const UploadPage = () => {
     ativo: true
   });
 
-  // Carregar tipos e categorias
+  // Carregar tipos e categorias (apenas do departamento do usuário)
   useEffect(() => {
     const loadData = async () => {
+      if (!userDepartmentId) return;
+      
       try {
         await Promise.all([
           carregarTipos(),
-          carregarCategorias()
+          carregarPorDepartamento(userDepartmentId, true) // Apenas categorias ativas do departamento
         ]);
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
@@ -94,7 +97,7 @@ const UploadPage = () => {
     };
     
     loadData();
-  }, [carregarTipos, carregarCategorias]);
+  }, [carregarTipos, carregarPorDepartamento, userDepartmentId]);
 
   // Atualizar responsável quando o usuário mudar
   useEffect(() => {

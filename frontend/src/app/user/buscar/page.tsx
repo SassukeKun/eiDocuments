@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import UserLayout from '@/components/ui/UserLayout';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
+import { useCategorias } from '@/hooks/useCategorias';
+import { useAuth } from '@/hooks/useAuth';
 
 // Dynamic import to avoid SSR issues with react-pdf
 const DocumentPreview = dynamic(
@@ -41,10 +43,18 @@ const BuscarDocumentosPage = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  const {
-    buscarPorTexto,
-    baixar
-  } = useDocumentos();
+  const { buscarPorTexto, baixar } = useDocumentos();
+  const { user } = useAuth();
+  const { categorias, carregarPorDepartamento } = useCategorias();
+  
+  const userDepartmentId = user?.departamento?._id;
+
+  // Carregar categorias do departamento do usuário
+  useEffect(() => {
+    if (userDepartmentId) {
+      carregarPorDepartamento(userDepartmentId, true);
+    }
+  }, [userDepartmentId, carregarPorDepartamento]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -285,24 +295,27 @@ const BuscarDocumentosPage = () => {
                   <select
                     value={filtros.categoria}
                     onChange={(e) => setFiltros({...filtros, categoria: e.target.value})}
-                    className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Todas as categorias</option>
-                    {/* TODO: Carregar categorias dinamicamente */}
+                    {categorias.map((cat) => (
+                      <option key={cat._id} value={cat._id}>
+                        {cat.nome}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Departamento
                   </label>
-                  <select
-                    value={filtros.departamento}
-                    onChange={(e) => setFiltros({...filtros, departamento: e.target.value})}
-                    className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                  >
-                    <option value="">Todos os departamentos</option>
-                    {/* TODO: Carregar departamentos dinamicamente */}
-                  </select>
+                  <input
+                    type="text"
+                    value={user?.departamento?.nome || ''}
+                    disabled
+                    className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-100 cursor-not-allowed"
+                    title="Você só pode buscar documentos do seu departamento"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
