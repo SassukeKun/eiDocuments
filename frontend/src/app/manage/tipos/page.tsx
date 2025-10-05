@@ -106,15 +106,19 @@ const TiposPage = () => {
       key: 'nome',
       title: 'Nome',
       sortable: true,
+      ellipsis: true,
+      maxWidth: '350px',
       render: (value, record) => (
         <div className="flex items-center space-x-3">
           <div className="flex-shrink-0">
             <File className="w-5 h-5 text-gray-400" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="font-medium text-gray-900">{value}</div>
             {record.descricao && (
-              <div className="text-sm text-gray-500">{record.descricao}</div>
+              <div className="text-sm text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap">
+                {record.descricao}
+              </div>
             )}
           </div>
         </div>

@@ -12,6 +12,8 @@ export interface TableColumn<T = any> {
   render?: (value: any, record: T) => React.ReactNode;
   sortable?: boolean;
   width?: string;
+  ellipsis?: boolean; // Nova propriedade para truncar texto com ...
+  maxWidth?: string; // Largura máxima para ellipsis
 }
 
 export interface TableAction<T = any> {
@@ -201,11 +203,29 @@ const DataTable = <T extends Record<string, any>>({
             {data.map((record, index) => (
               <tr key={index} className="hover:bg-gray-50 transition-colors">
                 {columns.map((column) => (
-                  <td key={column.key} className="px-6 py-4 whitespace-nowrap">
-                    {column.render
-                      ? column.render(record[column.key], record)
-                      : record[column.key]
-                    }
+                  <td 
+                    key={column.key} 
+                    className={`px-6 py-4 ${column.ellipsis ? '' : 'whitespace-nowrap'}`}
+                    style={column.ellipsis ? { maxWidth: column.maxWidth || '300px' } : undefined}
+                  >
+                    {column.ellipsis ? (
+                      <div 
+                        className="overflow-hidden text-ellipsis whitespace-nowrap" 
+                        title={String(record[column.key] || '')}
+                      >
+                        {column.render
+                          ? column.render(record[column.key], record)
+                          : record[column.key]
+                        }
+                      </div>
+                    ) : (
+                      <>
+                        {column.render
+                          ? column.render(record[column.key], record)
+                          : record[column.key]
+                        }
+                      </>
+                    )}
                   </td>
                 ))}
                 {allActions.length > 0 && (

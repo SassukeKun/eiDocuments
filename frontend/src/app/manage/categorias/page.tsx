@@ -142,6 +142,8 @@ const CategoriasPage = () => {
       key: 'nome',
       title: 'Nome',
       sortable: true,
+      ellipsis: true,
+      maxWidth: '350px',
       render: (value, record) => {
         const color = getColorDisplay(record.cor);
         return (
@@ -152,10 +154,12 @@ const CategoriasPage = () => {
                 style={{ backgroundColor: color.bg }}
               ></div>
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="font-medium text-gray-900">{value}</div>
               {record.descricao && (
-                <div className="text-sm text-gray-500">{record.descricao}</div>
+                <div className="text-sm text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap">
+                  {record.descricao}
+                </div>
               )}
             </div>
           </div>
