@@ -152,21 +152,25 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop semi-transparente apenas para dispositivos móveis */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
+        className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity sm:hidden"
         onClick={onClose}
       />
 
-      {/* Panel */}
-      <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform">
+      {/* Panel com animação de slide */}
+      <div className={`fixed right-0 top-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Refine sua busca</p>
+            </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-white rounded-lg transition-colors shadow-sm"
+              aria-label="Fechar filtros"
             >
               <X className="w-5 h-5 text-gray-500" />
             </button>
@@ -174,18 +178,24 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {fields.map(field => (
-              <div key={field.id}>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {field.label}
-                </label>
-                {renderField(field)}
+            {fields.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                <p>Nenhum filtro disponível</p>
               </div>
-            ))}
+            ) : (
+              fields.map(field => (
+                <div key={field.id} className="animate-fadeIn">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {field.label}
+                  </label>
+                  {renderField(field)}
+                </div>
+              ))
+            )}
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-200 p-6 space-y-3">
+          <div className="border-t border-gray-200 p-6 space-y-3 bg-gray-50">
             <ModernButton
               onClick={handleApply}
               className="w-full flex items-center justify-center space-x-2"

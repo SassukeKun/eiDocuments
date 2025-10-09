@@ -173,6 +173,8 @@ export const useTipos = () => {
       q?: string;
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
+      categoria?: string;
+      ativo?: string;
     }
   ) => {
     try {
@@ -188,6 +190,14 @@ export const useTipos = () => {
       if (params?.sortBy) {
         queryParams.sortBy = params.sortBy;
         queryParams.sortOrder = params.sortOrder || 'asc';
+      }
+
+      if (params?.categoria) {
+        queryParams.categoria = params.categoria;
+      }
+
+      if (params?.ativo) {
+        queryParams.ativo = params.ativo === 'true';
       }
 
       const response = await TiposService.listar(queryParams);
@@ -215,6 +225,8 @@ export const useTipos = () => {
       q?: string;
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
+      categoria?: string;
+      ativo?: string;
     }
   ) => {
     try {
@@ -230,6 +242,14 @@ export const useTipos = () => {
       if (params?.sortBy) {
         queryParams.sortBy = params.sortBy;
         queryParams.sortOrder = params.sortOrder || 'asc';
+      }
+
+      if (params?.categoria) {
+        queryParams.categoria = params.categoria;
+      }
+
+      if (params?.ativo) {
+        queryParams.ativo = params.ativo === 'true';
       }
 
       const response = await TiposService.listarPorDepartamento(departamentoId, queryParams);

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { CreateTipoDocumento, UpdateTipoDocumento, TipoDocumento, CategoriaDocumento } from '@/types';
 import { useTipos } from '@/hooks/useTipos';
 import { useCategorias } from '@/hooks/useCategorias';
+import { useDepartamentos } from '@/hooks/useDepartamentos';
 import { useAuth } from '@/hooks/useAuth';
 
 interface TipoFormProps {
@@ -17,9 +18,11 @@ const TipoForm: React.FC<TipoFormProps> = ({
 }) => {
   const { criar, atualizar, verificarCodigo } = useTipos();
   const { categorias, loading: loadingCategorias, carregar: carregarCategorias, carregarPorDepartamento } = useCategorias();
+  const { departamentos, carregar: carregarDepartamentos } = useDepartamentos();
   const { user, isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedDepartamento, setSelectedDepartamento] = useState<string>('');
   
   const [formData, setFormData] = useState<CreateTipoDocumento>({
     nome: '',
@@ -31,11 +34,13 @@ const TipoForm: React.FC<TipoFormProps> = ({
 
   const isEditing = !!tipo;
 
-  // Carregar categorias ao montar o componente
+  // Carregar departamentos e categorias ao montar o componente
   useEffect(() => {
-    const loadCategorias = async () => {
+    const loadInitialData = async () => {
       if (isAdmin()) {
-        // Admin vê todas as categorias
+        // Admin pode escolher departamento, então carrega todos os departamentos
+        await carregarDepartamentos();
+        // Carrega todas as categorias inicialmente
         carregarCategorias({ ativo: true });
       } else if (user?.departamento?._id) {
         // Editor/User vê apenas categorias do seu departamento
@@ -43,8 +48,21 @@ const TipoForm: React.FC<TipoFormProps> = ({
       }
     };
     
-    loadCategorias();
-  }, [isAdmin, user, carregarCategorias, carregarPorDepartamento]);
+    loadInitialData();
+  }, [isAdmin, user, carregarCategorias, carregarPorDepartamento, carregarDepartamentos]);
+
+  // Quando admin seleciona um departamento, carregar categorias desse departamento
+  useEffect(() => {
+    const loadCategoriasPorDept = async () => {
+      if (isAdmin() && selectedDepartamento) {
+        await carregarPorDepartamento(selectedDepartamento, true);
+        // Limpar categoria selecionada quando departamento muda
+        setFormData(prev => ({ ...prev, categoria: '' }));
+      }
+    };
+    
+    loadCategoriasPorDept();
+  }, [selectedDepartamento, isAdmin, carregarPorDepartamento]);
 
   useEffect(() => {
     if (tipo) {
@@ -151,6 +169,34 @@ const TipoForm: React.FC<TipoFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Departamento (apenas para Admin) */}
+        {isAdmin() && (
+          <div>
+            <label htmlFor="departamento" className="block text-sm font-medium text-gray-700">
+              Departamento *
+            </label>
+            <select
+              id="departamento"
+              value={selectedDepartamento}
+              onChange={(e) => setSelectedDepartamento(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+              disabled={loading || isEditing}
+            >
+              <option value="">Selecione um departamento</option>
+              {departamentos.map((dept) => (
+                <option key={dept._id} value={dept._id}>
+                  {dept.nome} ({dept.codigo})
+                </option>
+              ))}
+            </select>
+            {!selectedDepartamento && (
+              <p className="mt-1 text-sm text-blue-600">
+                ℹ️ Selecione um departamento para filtrar as categorias
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Categoria */}
         <div>
           <label htmlFor="categoria" className="block text-sm font-medium text-gray-700">
@@ -162,24 +208,25 @@ const TipoForm: React.FC<TipoFormProps> = ({
             value={formData.categoria}
             onChange={handleInputChange}
             className={`mt-1 block w-full rounded-md border ${errors.categoria ? 'border-red-300' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm`}
-            disabled={loading || loadingCategorias}
+            disabled={loading || loadingCategorias || (isAdmin() && !selectedDepartamento)}
           >
-            <option value="">Selecione uma categoria</option>
+            <option value="">
+              {isAdmin() && !selectedDepartamento 
+                ? 'Selecione um departamento primeiro' 
+                : 'Selecione uma categoria'}
+            </option>
             {categorias.map((cat) => (
               <option key={cat._id} value={cat._id}>
                 {cat.nome} ({cat.codigo})
-                {typeof cat.departamento === 'object' && cat.departamento?.nome 
-                  ? ` - ${cat.departamento.nome}` 
-                  : ''}
               </option>
             ))}
           </select>
           {errors.categoria && (
             <p className="mt-1 text-sm text-red-600">{errors.categoria}</p>
           )}
-          {categorias.length === 0 && !loadingCategorias && (
+          {categorias.length === 0 && !loadingCategorias && selectedDepartamento && (
             <p className="mt-1 text-sm text-amber-600">
-              ⚠️ Nenhuma categoria disponível. Crie uma categoria primeiro.
+              ⚠️ Nenhuma categoria disponível neste departamento. Crie uma categoria primeiro.
             </p>
           )}
         </div>

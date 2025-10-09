@@ -13,6 +13,7 @@ import { TipoDocumento } from '@/types';
 import { useTipos } from '@/hooks/useTipos';
 import { usePaginatedData } from '@/hooks/usePaginatedData';
 import { useCategorias } from '@/hooks/useCategorias';
+import { useDepartamentos } from '@/hooks/useDepartamentos';
 import { useAuth } from '@/hooks/useAuth';
 
 const TiposPage = () => {
@@ -30,7 +31,9 @@ const TiposPage = () => {
   } = useTipos();
 
   const { categorias, carregar: carregarCategorias, carregarPorDepartamento: carregarCategoriasPorDep } = useCategorias();
+  const { departamentos, carregar: carregarDepartamentos } = useDepartamentos();
   const [categoriasLoaded, setCategoriasLoaded] = useState(false);
+  const [departamentosLoaded, setDepartamentosLoaded] = useState(false);
 
   // Não renderizar até que o usuário esteja carregado
   if (authLoading) {
@@ -48,16 +51,26 @@ const TiposPage = () => {
 
   // Memorizar a função fetchData para evitar re-renderizações
   const fetchData = useCallback(async (params: any) => {
-    // Se for editor, usar endpoint específico de departamento
-    if (!isAdmin() && user?.departamento?._id) {
-      console.log('🔵 Editor - Carregando tipos do departamento:', user.departamento._id);
-      return carregarPorDepartamento(user.departamento._id, params);
+    // Combinar params com filtros ativos
+    const combinedParams = {
+      ...params,
+      ...activeFilters
+    };
+    
+    // Se for editor OU se admin filtrou por departamento específico, usar endpoint de departamento
+    const departamentoId = !isAdmin() && user?.departamento?._id 
+      ? user.departamento._id 
+      : combinedParams.departamento;
+    
+    if (departamentoId) {
+      // Remover departamento dos params já que vai na URL
+      const { departamento, ...restParams } = combinedParams;
+      return carregarPorDepartamento(departamentoId, restParams);
     }
     
-    // Admin vê todos
-    console.log('🔴 Admin - Carregando todos os tipos');
-    return carregarPaginado(params);
-  }, [isAdmin, user?.departamento?._id, carregarPorDepartamento, carregarPaginado]);
+    // Admin sem filtro de departamento - vê todos
+    return carregarPaginado(combinedParams);
+  }, [isAdmin, user?.departamento?._id, carregarPorDepartamento, carregarPaginado, activeFilters]);
 
   // Hook de paginação com dados da API
   const {
@@ -95,8 +108,67 @@ const TiposPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.departamento?._id]);
 
+  useEffect(() => {
+    // Carregar departamentos para admin
+    if (departamentosLoaded || !isAdmin() || !user) return;
+    
+    const loadDepartamentos = async () => {
+      try {
+        await carregarDepartamentos();
+        setDepartamentosLoaded(true);
+      } catch (error) {
+        console.error('Erro ao carregar departamentos:', error);
+      }
+    };
+    
+    loadDepartamentos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   // Configuração dos filtros
-  const filterFields: FilterField[] = [
+  const filterFields: FilterField[] = isAdmin() ? [
+    {
+      id: 'departamento',
+      label: 'Departamento',
+      type: 'select',
+      placeholder: 'Todos os departamentos',
+      options: departamentos.map(dept => ({
+        id: dept._id,
+        label: dept.nome,
+        value: dept._id
+      }))
+    },
+    {
+      id: 'categoria',
+      label: 'Categoria',
+      type: 'select',
+      placeholder: 'Todas as categorias',
+      options: categorias
+        .filter(cat => {
+          // Se houver filtro de departamento ativo, mostrar só categorias desse departamento
+          if (activeFilters.departamento) {
+            const catDept = typeof cat.departamento === 'string' ? cat.departamento : cat.departamento?._id;
+            return catDept === activeFilters.departamento;
+          }
+          return true;
+        })
+        .map(cat => ({
+          id: cat._id,
+          label: cat.nome,
+          value: cat._id
+        }))
+    },
+    {
+      id: 'ativo',
+      label: 'Status',
+      type: 'select',
+      placeholder: 'Todos',
+      options: [
+        { id: 'true', label: 'Ativos', value: 'true' },
+        { id: 'false', label: 'Inativos', value: 'false' }
+      ]
+    }
+  ] : [
     {
       id: 'categoria',
       label: 'Categoria',
@@ -121,14 +193,15 @@ const TiposPage = () => {
   ];
 
   const handleApplyFilters = (filters: Record<string, any>) => {
+    console.log('📋 Filtros aplicados:', filters);
     setActiveFilters(filters);
-    // TODO: Implementar lógica de filtragem na API
-    console.log('Filtros aplicados:', filters);
+    // O refetch será disparado automaticamente pelo useEffect do usePaginatedData
+    // quando activeFilters mudar (porque fetchData depende de activeFilters)
   };
 
   const handleClearFilters = () => {
     setActiveFilters({});
-    refetch();
+    // O refetch será disparado automaticamente
   };
 
   const handleSearch = async (query: string) => {

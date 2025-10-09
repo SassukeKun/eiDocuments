@@ -115,7 +115,10 @@ export interface CategoriaQueryParams extends BaseQueryParams {
   departamento?: string;
 }
 
-export interface TipoQueryParams extends BaseQueryParams {}
+export interface TipoQueryParams extends BaseQueryParams {
+  categoria?: string;
+  departamento?: string;
+}
 
 export interface DocumentoQueryParams extends BaseQueryParams {
   departamento?: string;
