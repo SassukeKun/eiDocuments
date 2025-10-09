@@ -162,34 +162,35 @@ export const useUsuarios = () => {
   }, [showError]);
 
   // Carregar com paginação (compatível com usePaginatedData)
-  const carregarPaginado = useCallback(async (
-    page: number, 
-    limit: number, 
-    search?: string, 
-    sort?: { column: string; direction: 'asc' | 'desc' }
-  ) => {
+  const carregarPaginado = useCallback(async (params: {
+    page?: number;
+    limit?: number;
+    q?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) => {
     try {
       setLoading(true);
       setError(null);
       
-      const params: UsuarioQueryParams = {
-        page,
-        limit,
-        ...(search && { q: search }),
-        ...(sort && { 
-          sortBy: sort.column,
-          sortOrder: sort.direction 
+      const queryParams: UsuarioQueryParams = {
+        page: params.page || 1,
+        limit: params.limit || 10,
+        ...(params.q && { q: params.q }),
+        ...(params.sortBy && { 
+          sortBy: params.sortBy,
+          sortOrder: params.sortOrder || 'asc'
         })
       };
       
-      const response = await UsuariosService.listar(params);
+      const response = await UsuariosService.listar(queryParams);
       
       // O backend retorna: { success: true, data: [...], page, limit, total }
       return {
         data: response.data,
         total: response.total || 0,
-        page: response.page || page,
-        totalPages: Math.ceil((response.total || 0) / limit)
+        page: response.page || params.page || 1,
+        totalPages: Math.ceil((response.total || 0) / (params.limit || 10))
       };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar usuários';
