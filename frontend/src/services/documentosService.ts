@@ -31,7 +31,7 @@ export interface DocumentoCreateData {
   titulo: string;
   descricao?: string;
   categoria: string;
-  tipo: string;
+  tipo?: string; // OPCIONAL - algumas categorias não têm tipos específicos
   departamento: string;
   usuario?: string;
   tipoMovimento: 'enviado' | 'recebido' | 'interno';
@@ -81,7 +81,7 @@ export class DocumentosService {
     formData.append('titulo', documento.titulo);
     if (documento.descricao) formData.append('descricao', documento.descricao);
     formData.append('categoria', documento.categoria);
-    formData.append('tipo', documento.tipo);
+    if (documento.tipo) formData.append('tipo', documento.tipo); // Apenas adicionar se houver tipo
     formData.append('departamento', documento.departamento);
     if (documento.usuario) formData.append('usuario', documento.usuario);
     formData.append('tipoMovimento', documento.tipoMovimento);

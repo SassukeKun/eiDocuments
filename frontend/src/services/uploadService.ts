@@ -201,7 +201,7 @@ export class UploadService {
     titulo: string;
     descricao?: string;
     categoria: string; // ID da categoria
-    tipo: string; // ID do tipo
+    tipo?: string; // ID do tipo (OPCIONAL - algumas categorias não têm tipos)
     departamento: string;
     usuario: string;
     tipoMovimento: 'enviado' | 'recebido' | 'interno';
@@ -221,7 +221,7 @@ export class UploadService {
         titulo: data.titulo,
         descricao: data.descricao,
         categoria: data.categoria,
-        tipo: data.tipo,
+        ...(data.tipo && { tipo: data.tipo }), // Apenas incluir se houver tipo
         departamento: data.departamento,
         usuario: data.usuario,
         tipoMovimento: data.tipoMovimento,

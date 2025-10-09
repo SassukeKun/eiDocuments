@@ -412,7 +412,7 @@ const UploadPage = () => {
           titulo: formData.titulo,
           descricao: formData.descricao,
           categoria: formData.categoria,
-          tipo: formData.tipo,
+          ...(formData.tipo && { tipo: formData.tipo }), // Apenas incluir se houver tipo
           departamento: user.departamento._id,
           usuario: user._id,
           tipoMovimento: formData.tipoMovimento,
