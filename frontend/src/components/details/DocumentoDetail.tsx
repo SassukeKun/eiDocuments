@@ -19,6 +19,7 @@ import {
   CheckCircle,
   XCircle,
   Archive,
+  Eye,
 } from 'lucide-react';
 
 interface DocumentoDetailProps {
@@ -35,6 +36,7 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
   onDownload
 }) => {
   const [imageError, setImageError] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   if (!documento) return null;
 
@@ -286,6 +288,20 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
               <span className="text-gray-500">Última Atualização:</span>
               <span className="ml-2 text-gray-900">{formatDate(documento.dataAtualizacao)}</span>
             </div>
+            {documento.ultimaEdicao && documento.ultimaEdicao.usuario && (
+              <>
+                <div>
+                  <span className="text-gray-500">Modificado por:</span>
+                  <span className="ml-2 text-gray-900">{getEntityName(documento.ultimaEdicao.usuario)}</span>
+                </div>
+                {documento.ultimaEdicao.descricao && (
+                  <div className="md:col-span-2">
+                    <span className="text-gray-500">Descrição da edição:</span>
+                    <span className="ml-2 text-gray-900">{documento.ultimaEdicao.descricao}</span>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </DetailModal>

@@ -73,6 +73,11 @@ export interface Documento {
   status: 'ativo' | 'arquivado';
   tags: string[];
   ativo: boolean;
+  ultimaEdicao?: {
+    usuario: string | Usuario;
+    data: string;
+    descricao?: string;
+  };
   dataCriacao: string;
   dataAtualizacao: string;
 }
