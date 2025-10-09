@@ -9,7 +9,8 @@ import {
   Calendar, 
   Code, 
   CheckCircle,
-  XCircle
+  XCircle,
+  Folder
 } from 'lucide-react';
 
 interface TipoDetailProps {
@@ -59,6 +60,8 @@ const TipoDetail: React.FC<TipoDetailProps> = ({
 
   if (!tipo) return null;
 
+  const categoria = typeof tipo.categoria === 'string' ? null : tipo.categoria;
+
   return (
     <DetailModal
       isOpen={isOpen}
@@ -97,6 +100,22 @@ const TipoDetail: React.FC<TipoDetailProps> = ({
               {tipo.descricao && (
                 <p className="text-gray-600 mb-3">{tipo.descricao}</p>
               )}
+              
+              {/* Categoria */}
+              {categoria && (
+                <div className="mb-3 flex items-center space-x-2">
+                  <Folder className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-700">Categoria:</span>
+                  <div className="flex items-center space-x-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: categoria.cor || '#6B7280' }}
+                    />
+                    <span className="text-sm font-medium text-gray-900">{categoria.nome}</span>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex items-center space-x-4 text-sm text-gray-500">
                 <div className="flex items-center space-x-1">
                   <Code className="w-4 h-4" />

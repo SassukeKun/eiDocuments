@@ -56,20 +56,38 @@ const TiposPage = () => {
       ...params,
       ...activeFilters
     };
-    
+
+    // Sanitizar: garantir que todos os valores são primitivos
+    const sanitizedParams: Record<string, any> = {};
+    Object.entries(combinedParams).forEach(([key, value]) => {
+      if (
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean' ||
+        value === undefined ||
+        value === null
+      ) {
+        sanitizedParams[key] = value;
+      } else if (typeof value === 'object' && value !== null && 'value' in value) {
+        // Caso venha de select customizado (ex: { value: 'abc', label: 'Nome' })
+        sanitizedParams[key] = value.value;
+      }
+      // Ignora outros tipos
+    });
+
     // Se for editor OU se admin filtrou por departamento específico, usar endpoint de departamento
     const departamentoId = !isAdmin() && user?.departamento?._id 
       ? user.departamento._id 
-      : combinedParams.departamento;
-    
+      : sanitizedParams.departamento;
+
     if (departamentoId) {
       // Remover departamento dos params já que vai na URL
-      const { departamento, ...restParams } = combinedParams;
+      const { departamento, ...restParams } = sanitizedParams;
       return carregarPorDepartamento(departamentoId, restParams);
     }
-    
+
     // Admin sem filtro de departamento - vê todos
-    return carregarPaginado(combinedParams);
+    return carregarPaginado(sanitizedParams);
   }, [isAdmin, user?.departamento?._id, carregarPorDepartamento, carregarPaginado, activeFilters]);
 
   // Hook de paginação com dados da API
@@ -270,7 +288,7 @@ const TiposPage = () => {
       title: 'Nome',
       sortable: true,
       ellipsis: true,
-      maxWidth: '350px',
+      maxWidth: '300px',
       render: (value, record) => (
         <div className="flex items-center space-x-3">
           <div className="flex-shrink-0">
@@ -286,6 +304,31 @@ const TiposPage = () => {
           </div>
         </div>
       ),
+    },
+    {
+      key: 'categoria',
+      title: 'Categoria',
+      sortable: false,
+      width: 'w-48',
+      render: (value, record) => {
+        const categoria = typeof record.categoria === 'string' 
+          ? null 
+          : record.categoria;
+        
+        return categoria ? (
+          <div className="flex items-center space-x-2">
+            <div 
+              className="w-3 h-3 rounded-full flex-shrink-0" 
+              style={{ backgroundColor: categoria.cor || '#6B7280' }}
+            />
+            <span className="text-sm text-gray-900 truncate">
+              {categoria.nome}
+            </span>
+          </div>
+        ) : (
+          <span className="text-sm text-gray-400">-</span>
+        );
+      },
     },
     {
       key: 'ativo',

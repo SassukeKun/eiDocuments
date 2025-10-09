@@ -57,9 +57,19 @@ export class TiposService {
   // Listar apenas tipos ativos
   static async listarAtivos(): Promise<ApiPaginatedResponse<TipoDocumento>> {
     const params: TipoQueryParams = {
-      ativo: true
+      ativo: true,
+      limit: 1000
     };
     return this.listar(params);
+  }
+
+  // Listar apenas tipos ativos de um departamento específico
+  static async listarAtivosPorDepartamento(departamentoId: string): Promise<ApiPaginatedResponse<TipoDocumento>> {
+    const params: TipoQueryParams = {
+      ativo: true,
+      limit: 1000
+    };
+    return this.listarPorDepartamento(departamentoId, params);
   }
 
   // Verificar se código já existe
@@ -84,10 +94,24 @@ export class TiposService {
     }
   }
 
-  // Obter tipos para select/dropdown
+  // Obter tipos para select/dropdown (admin - todos os tipos)
   static async obterParaSelect(): Promise<{ value: string; label: string }[]> {
     try {
       const response = await this.listarAtivos();
+      return response.data.map(tipo => ({
+        value: tipo._id,
+        label: tipo.nome
+      }));
+    } catch (error) {
+      console.error('Erro ao obter tipos para select:', error);
+      return [];
+    }
+  }
+
+  // Obter tipos para select/dropdown (editor/user - por departamento)
+  static async obterParaSelectPorDepartamento(departamentoId: string): Promise<{ value: string; label: string }[]> {
+    try {
+      const response = await this.listarAtivosPorDepartamento(departamentoId);
       return response.data.map(tipo => ({
         value: tipo._id,
         label: tipo.nome

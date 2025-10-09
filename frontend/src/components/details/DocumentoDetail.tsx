@@ -197,7 +197,9 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
                 <File className="w-4 h-4 text-purple-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Tipo</p>
-                  <p className="text-sm text-gray-600">{getEntityName(documento.tipo)}</p>
+                  <p className="text-sm text-gray-600">
+                    {documento.tipo ? getEntityName(documento.tipo) : 'Sem tipo específico'}
+                  </p>
                 </div>
               </div>
             </div>

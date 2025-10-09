@@ -52,7 +52,7 @@ export interface Documento {
   titulo: string;
   descricao?: string;
   categoria: string | CategoriaDocumento;     // ID ou objeto populado
-  tipo: string | TipoDocumento;              // ID ou objeto populado
+  tipo?: string | TipoDocumento;             // ID ou objeto populado (OPCIONAL - algumas categorias não têm tipos)
   departamento: string | Departamento;       // ID ou objeto populado
   usuario: string | Usuario;                 // ID ou objeto populado
   tipoMovimento: 'enviado' | 'recebido' | 'interno';
@@ -173,7 +173,7 @@ export interface CreateDocumento {
   titulo: string;
   descricao?: string;
   categoria: string;
-  tipo: string;
+  tipo?: string; // OPCIONAL - algumas categorias não têm tipos específicos
   departamento: string;
   tipoMovimento: 'enviado' | 'recebido' | 'interno';
   remetente?: string;

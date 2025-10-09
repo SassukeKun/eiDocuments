@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTipos } from "@/hooks/useTipos";
 import { useCategorias } from "@/hooks/useCategorias";
 import { UploadService } from "@/services/uploadService";
+import { TipoDocumento } from "@/types";
 
 interface UploadFile {
   id: string;
@@ -56,7 +57,7 @@ const UploadPage = () => {
   const { success, error } = useToastContext();
   const router = useRouter();
   const { user } = useAuth();
-  const { tipos, carregar: carregarTipos, loading: loadingTipos } = useTipos();
+  const { carregarAtivosPorDepartamento, loading: loadingTipos } = useTipos();
   const { categorias, carregarPorDepartamento, loading: loadingCategorias } = useCategorias();
   
   const userDepartment = user?.departamento?.nome || "Departamento não identificado";
@@ -66,8 +67,8 @@ const UploadPage = () => {
   const [newTag, setNewTag] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [tiposDoDepartamento, setTiposDoDepartamento] = useState<typeof tipos>([]);
-  const [tiposFiltrados, setTiposFiltrados] = useState<typeof tipos>([]);
+  const [tiposDoDepartamento, setTiposDoDepartamento] = useState<TipoDocumento[]>([]);
+  const [tiposFiltrados, setTiposFiltrados] = useState<TipoDocumento[]>([]);
   const [formData, setFormData] = useState<DocumentForm>({
     titulo: '',
     descricao: '',
@@ -102,20 +103,19 @@ const UploadPage = () => {
   // Carregar tipos quando as categorias mudarem
   useEffect(() => {
     const loadTipos = async () => {
-      if (categorias.length === 0) {
+      if (categorias.length === 0 || !userDepartmentId) {
         setTiposDoDepartamento([]);
         setTiposFiltrados([]);
         return;
       }
       
       try {
-        // Carregar todos os tipos ativos (serão filtrados por categoria na seleção)
-        const params = { ativo: true, limit: 1000 };
-        const response = await carregarTipos(params);
+        // Carregar tipos ativos do departamento do usuário
+        const tiposData = await carregarAtivosPorDepartamento(userDepartmentId);
         
         // Filtrar apenas tipos que pertencem às categorias do departamento
         const categoriasIds = categorias.map(cat => cat._id);
-        const tiposFiltradosPorDept = response.data.filter(tipo => {
+        const tiposFiltradosPorDept = tiposData.filter((tipo: TipoDocumento) => {
           const categoriaId = typeof tipo.categoria === 'string' ? tipo.categoria : tipo.categoria._id;
           return categoriasIds.includes(categoriaId);
         });
@@ -128,7 +128,7 @@ const UploadPage = () => {
     };
     
     loadTipos();
-  }, [categorias, carregarTipos]);
+  }, [categorias, carregarAtivosPorDepartamento, userDepartmentId]);
 
   // Filtrar tipos baseado na categoria selecionada
   useEffect(() => {
@@ -137,7 +137,7 @@ const UploadPage = () => {
       return;
     }
 
-    const filtrados = tiposDoDepartamento.filter(tipo => {
+    const filtrados = tiposDoDepartamento.filter((tipo: TipoDocumento) => {
       // Se tipo.categoria é string (ID)
       if (typeof tipo.categoria === 'string') {
         return tipo.categoria === formData.categoria;
@@ -150,7 +150,7 @@ const UploadPage = () => {
 
     // Se o tipo selecionado não pertence à categoria, limpar
     if (formData.tipo) {
-      const tipoValido = filtrados.find(t => t._id === formData.tipo);
+      const tipoValido = filtrados.find((t: TipoDocumento) => t._id === formData.tipo);
       if (!tipoValido) {
         setFormData(prev => ({ ...prev, tipo: '' }));
       }
@@ -354,14 +354,11 @@ const UploadPage = () => {
     }
 
     if (!formData.categoria.trim()) {
-      error("Digite uma categoria para o documento");
+      error("Selecione uma categoria para o documento");
       return;
     }
 
-    if (!formData.tipo.trim()) {
-      error("Digite um tipo para o documento");
-      return;
-    }
+    // Tipo é opcional - não validar
 
     if (!user?.departamento?._id) {
       error("Departamento do usuário não identificado");
@@ -467,9 +464,11 @@ const UploadPage = () => {
   };
 
   const isFormValid = () => {
-    if (files.length === 0 || !formData.titulo.trim() || !formData.categoria.trim() || !formData.tipo.trim() || isUploading) {
+    if (files.length === 0 || !formData.titulo.trim() || !formData.categoria.trim() || isUploading) {
       return false;
     }
+    
+    // Tipo é opcional - não validar
     
     // Validações específicas por tipo de movimento
     if (formData.tipoMovimento === 'enviado') {
@@ -668,19 +667,20 @@ const UploadPage = () => {
             {/* Tipo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo *
+                Tipo <span className="text-gray-400 text-xs">(opcional)</span>
               </label>
               <select
                 value={formData.tipo}
                 onChange={(e) => handleInputChange('tipo', e.target.value)}
                 className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
                 disabled={!formData.categoria || loadingTipos}
               >
                 <option value="">
                   {!formData.categoria 
                     ? 'Selecione uma categoria primeiro...' 
-                    : 'Selecione um tipo...'}
+                    : tiposFiltrados.length === 0 
+                      ? 'Sem tipo específico'
+                      : 'Sem tipo específico'}
                 </option>
                 {tiposFiltrados.map((tipo) => (
                   <option key={tipo._id} value={tipo._id}>
@@ -692,8 +692,8 @@ const UploadPage = () => {
                 <p className="text-xs text-blue-500 mt-1">Carregando tipos...</p>
               )}
               {formData.categoria && tiposFiltrados.length === 0 && !loadingTipos && (
-                <p className="text-xs text-amber-600 mt-1">
-                  ⚠️ Nenhum tipo disponível para esta categoria. Crie um tipo primeiro.
+                <p className="text-xs text-gray-500 mt-1">
+                  ℹ️ Esta categoria não possui tipos específicos. Você pode prosseguir sem selecionar um tipo.
                 </p>
               )}
               {!formData.categoria && (
@@ -912,8 +912,7 @@ const UploadPage = () => {
                 <ul className="list-disc list-inside space-y-1">
                   {files.length === 0 && <li>Selecione pelo menos um arquivo</li>}
                   {!formData.titulo.trim() && <li>Digite um título para o documento</li>}
-                  {!formData.categoria.trim() && <li>Digite uma categoria para o documento</li>}
-                  {!formData.tipo.trim() && <li>Digite um tipo para o documento</li>}
+                  {!formData.categoria.trim() && <li>Selecione uma categoria para o documento</li>}
                   {formData.tipoMovimento === 'enviado' && !formData.destinatario?.trim() && <li>Informe o destinatário</li>}
                   {formData.tipoMovimento === 'enviado' && !formData.dataEnvio && <li>Selecione a data de envio</li>}
                   {formData.tipoMovimento === 'recebido' && !formData.remetente?.trim() && <li>Informe o remetente</li>}

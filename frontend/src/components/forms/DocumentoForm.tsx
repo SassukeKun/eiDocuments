@@ -26,7 +26,7 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
   const { criar, atualizar } = useDocumentos();
   const { obterParaSelect: obterDepartamentos } = useDepartamentos();
   const { obterParaSelect: obterCategorias } = useCategorias();
-  const { obterParaSelect: obterTipos } = useTipos();
+  const { obterParaSelect: obterTipos, obterParaSelectPorDepartamento: obterTiposPorDep } = useTipos();
   const { user, isAdmin } = useAuth();
   
   const [loading, setLoading] = useState(false);
@@ -77,7 +77,7 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
           titulo: documento.titulo,
           descricao: documento.descricao || '',
           categoria: typeof documento.categoria === 'string' ? documento.categoria : documento.categoria._id,
-          tipo: typeof documento.tipo === 'string' ? documento.tipo : documento.tipo._id,
+          tipo: documento.tipo ? (typeof documento.tipo === 'string' ? documento.tipo : documento.tipo._id) : '',
           departamento: typeof documento.departamento === 'string' ? documento.departamento : documento.departamento._id,
           tipoMovimento: documento.tipoMovimento,
           remetente: documento.remetente || '',
@@ -159,19 +159,13 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
 
   const loadTiposDoDepartamento = async (departamentoId: string) => {
     try {
-      // Buscar todos os tipos e filtrar por departamento via categorias
-      const allTipos = await obterTipos();
-      const categoriasIds = categorias.map(c => c.value);
+      // Se for admin, buscar todos os tipos
+      // Se for editor/user, buscar apenas tipos do departamento
+      const tiposData = isAdmin() 
+        ? await obterTipos() 
+        : await obterTiposPorDep(departamentoId);
       
-      // Se ainda não temos categorias carregadas, buscar do backend
-      if (categoriasIds.length === 0) {
-        const categoriesData = await obterCategorias(departamentoId);
-        const catIds = categoriesData.map(c => c.value);
-        // Filtrar tipos que pertencem a essas categorias (isso vai requerer dados completos)
-        setTipos(allTipos); // Por enquanto carregar todos
-      } else {
-        setTipos(allTipos);
-      }
+      setTipos(tiposData);
     } catch (error) {
       console.error('Erro ao carregar tipos:', error);
       setTipos([]);
@@ -181,9 +175,7 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
   // Filtrar tipos por categoria selecionada
   useEffect(() => {
     if (formData.categoria && tipos.length > 0) {
-      // Como obterTipos não aceita parâmetros, vamos filtrar localmente
-      // Mas isso requer que os tipos tenham a informação da categoria
-      // Por ora, mostrar todos os tipos quando uma categoria é selecionada
+      // Mostrar todos os tipos disponíveis quando uma categoria é selecionada
       setTiposFiltrados(tipos);
     } else {
       setTiposFiltrados([]);
@@ -272,9 +264,7 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
       newErrors.categoria = 'Categoria é obrigatória';
     }
 
-    if (!formData.tipo) {
-      newErrors.tipo = 'Tipo é obrigatório';
-    }
+    // Tipo é opcional - não validar
 
     if (!formData.departamento) {
       newErrors.departamento = 'Departamento é obrigatório';
@@ -458,7 +448,7 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
           {/* Tipo */}
           <div>
             <label htmlFor="tipo" className="block text-sm font-medium text-gray-700">
-              Tipo *
+              Tipo <span className="text-gray-400 text-xs">(opcional)</span>
             </label>
             <select
               id="tipo"
@@ -469,7 +459,11 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
               disabled={loading || !formData.categoria}
             >
               <option value="">
-                {!formData.categoria ? 'Selecione uma categoria primeiro' : 'Selecione um tipo'}
+                {!formData.categoria 
+                  ? 'Selecione uma categoria primeiro' 
+                  : tiposFiltrados.length === 0 
+                    ? 'Nenhum tipo disponível para esta categoria'
+                    : 'Sem tipo específico'}
               </option>
               {tiposFiltrados.map(tipo => (
                 <option key={tipo.value} value={tipo.value}>
@@ -477,6 +471,11 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
                 </option>
               ))}
             </select>
+            {formData.categoria && tiposFiltrados.length === 0 && (
+              <p className="mt-1 text-sm text-gray-500">
+                Esta categoria não possui tipos específicos cadastrados.
+              </p>
+            )}
             {errors.tipo && (
               <p className="mt-1 text-sm text-red-600">{errors.tipo}</p>
             )}

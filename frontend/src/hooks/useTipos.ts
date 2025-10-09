@@ -144,10 +144,38 @@ export const useTipos = () => {
     }
   }, [showError]);
 
+  // Carregar apenas ativos de um departamento (para selects de editor/user)
+  const carregarAtivosPorDepartamento = useCallback(async (departamentoId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await TiposService.listarAtivosPorDepartamento(departamentoId);
+      return response.data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar tipos ativos';
+      setError(errorMessage);
+      showError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [showError]);
+
   // Obter para select
   const obterParaSelect = useCallback(async () => {
     try {
       return await TiposService.obterParaSelect();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao obter tipos para seleção';
+      showError(errorMessage);
+      return [];
+    }
+  }, [showError]);
+
+  // Obter para select por departamento (editor/user)
+  const obterParaSelectPorDepartamento = useCallback(async (departamentoId: string) => {
+    try {
+      return await TiposService.obterParaSelectPorDepartamento(departamentoId);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao obter tipos para seleção';
       showError(errorMessage);
@@ -279,7 +307,9 @@ export const useTipos = () => {
     remover,
     buscarPorTexto,
     carregarAtivos,
+    carregarAtivosPorDepartamento,
     obterParaSelect,
+    obterParaSelectPorDepartamento,
     verificarCodigo,
     carregarPaginado,
     carregarPorDepartamento,
