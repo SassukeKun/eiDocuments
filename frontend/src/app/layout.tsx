@@ -15,8 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "eiDocuments - Plataforma Inteligente de Documentos",
+  title: "eiDocs - Plataforma Inteligente de Documentos",
   description: "Sistema moderno e inteligente para armazenamento e gerenciamento de documentos digitais",
+  icons: {
+    icon: '/logo.jpg',
+    shortcut: '/logo.jpg',
+    apple: '/logo.jpg',
+  },
 };
 
 export default function RootLayout({

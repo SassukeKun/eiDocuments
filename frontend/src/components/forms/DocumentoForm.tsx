@@ -26,7 +26,7 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
   const { criar, atualizar } = useDocumentos();
   const { obterParaSelect: obterDepartamentos } = useDepartamentos();
   const { obterParaSelect: obterCategorias } = useCategorias();
-  const { obterParaSelect: obterTipos, obterParaSelectPorDepartamento: obterTiposPorDep } = useTipos();
+  const { carregarAtivosPorDepartamento } = useTipos();
   const { user, isAdmin } = useAuth();
   
   const [loading, setLoading] = useState(false);
@@ -36,8 +36,8 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
   
   const [departamentos, setDepartamentos] = useState<{ value: string; label: string }[]>([]);
   const [categorias, setCategorias] = useState<{ value: string; label: string }[]>([]);
-  const [tipos, setTipos] = useState<{ value: string; label: string }[]>([]);
-  const [tiposFiltrados, setTiposFiltrados] = useState<{ value: string; label: string }[]>([]);
+  const [tiposDoDepartamento, setTiposDoDepartamento] = useState<any[]>([]);
+  const [tiposFiltrados, setTiposFiltrados] = useState<any[]>([]);
   
   const [formData, setFormData] = useState<CreateDocumento>({
     titulo: '',
@@ -92,12 +92,13 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
         setSelectedFile(null); // Não permite alterar arquivo na edição
       } else {
         // Modo criação - limpar formulário
+        // Para editores, manter o departamento pré-selecionado
         setFormData({
           titulo: '',
           descricao: '',
           categoria: '',
           tipo: '',
-          departamento: '',
+          departamento: !isAdmin() && user?.departamento?._id ? user.departamento._id : '',
           tipoMovimento: 'interno',
           remetente: '',
           destinatario: '',
@@ -109,6 +110,11 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
           ativo: true
         });
         setSelectedFile(null);
+        
+        // Para editores, carregar categorias do departamento
+        if (!isAdmin() && user?.departamento?._id) {
+          loadCategorias(user.departamento._id);
+        }
       }
       setErrors({});
     }
@@ -123,12 +129,6 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
           : [];
       
       setDepartamentos(depsData);
-      
-      // Se editor/user, pré-selecionar departamento e carregar categorias
-      if (!isAdmin() && user?.departamento?._id) {
-        setFormData(prev => ({ ...prev, departamento: user.departamento._id }));
-        loadCategorias(user.departamento._id);
-      }
     } catch (error) {
       console.error('Erro ao carregar dados para selects:', error);
     }
@@ -149,42 +149,67 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
       const categoriesData = await obterCategorias(departamentoId);
       setCategorias(categoriesData);
       
-      // Também carregar tipos desse departamento
-      await loadTiposDoDepartamento(departamentoId);
+      // Carregar tipos desse departamento passando as categorias
+      await loadTiposDoDepartamento(departamentoId, categoriesData);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
       setCategorias([]);
     }
   };
 
-  const loadTiposDoDepartamento = async (departamentoId: string) => {
+  const loadTiposDoDepartamento = async (departamentoId: string, categoriasData?: { value: string; label: string }[]) => {
     try {
-      // Se for admin, buscar todos os tipos
-      // Se for editor/user, buscar apenas tipos do departamento
-      const tiposData = isAdmin() 
-        ? await obterTipos() 
-        : await obterTiposPorDep(departamentoId);
+      console.log('📄 DocumentoForm - Carregando tipos do departamento:', departamentoId);
       
-      setTipos(tiposData);
+      // Carregar tipos ativos do departamento
+      const tiposData = await carregarAtivosPorDepartamento(departamentoId);
+      console.log('📦 DocumentoForm - Tipos recebidos:', tiposData.length);
+      
+      // Usar categorias passadas ou do estado
+      const cats = categoriasData || categorias;
+      console.log('📋 DocumentoForm - Categorias para filtrar:', cats.length);
+      
+      // Filtrar apenas tipos que pertencem às categorias do departamento
+      const categoriasIds = cats.map(cat => cat.value);
+      const tiposFiltradosPorDept = tiposData.filter((tipo: any) => {
+        const categoriaId = typeof tipo.categoria === 'string' ? tipo.categoria : tipo.categoria?._id;
+        return categoriasIds.includes(categoriaId);
+      });
+      
+      console.log('✅ DocumentoForm - Tipos filtrados:', tiposFiltradosPorDept.length);
+      setTiposDoDepartamento(tiposFiltradosPorDept);
     } catch (error) {
-      console.error('Erro ao carregar tipos:', error);
-      setTipos([]);
+      console.error('❌ DocumentoForm - Erro ao carregar tipos:', error);
+      setTiposDoDepartamento([]);
     }
   };
 
   // Filtrar tipos por categoria selecionada
   useEffect(() => {
-    if (formData.categoria && tipos.length > 0) {
-      // Mostrar todos os tipos disponíveis quando uma categoria é selecionada
-      setTiposFiltrados(tipos);
-    } else {
+    if (!formData.categoria) {
       setTiposFiltrados([]);
-      // Limpar tipo selecionado se categoria mudar
-      if (formData.tipo && !formData.categoria) {
+      return;
+    }
+
+    const filtrados = tiposDoDepartamento.filter((tipo: any) => {
+      // Se tipo.categoria é string (ID)
+      if (typeof tipo.categoria === 'string') {
+        return tipo.categoria === formData.categoria;
+      }
+      // Se tipo.categoria é objeto populado
+      return tipo.categoria?._id === formData.categoria;
+    });
+
+    setTiposFiltrados(filtrados);
+
+    // Se o tipo selecionado não pertence à categoria, limpar
+    if (formData.tipo) {
+      const tipoValido = filtrados.find((t: any) => t._id === formData.tipo);
+      if (!tipoValido) {
         setFormData(prev => ({ ...prev, tipo: '' }));
       }
     }
-  }, [formData.categoria, tipos]);
+  }, [formData.categoria, tiposDoDepartamento, formData.tipo]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -405,8 +430,8 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
               name="departamento"
               value={formData.departamento}
               onChange={handleInputChange}
-              className={`mt-1 block w-full rounded-md border ${errors.departamento ? 'border-red-300' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm`}
-              disabled={loading}
+              className={`mt-1 block w-full rounded-md border ${errors.departamento ? 'border-red-300' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm ${!isAdmin() ? 'bg-gray-50' : ''}`}
+              disabled={loading || !isAdmin()}
             >
               <option value="">Selecione um departamento</option>
               {departamentos.map(dept => (
@@ -415,6 +440,9 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
                 </option>
               ))}
             </select>
+            {!isAdmin() && (
+              <p className="mt-1 text-xs text-gray-500">Seu departamento (não editável)</p>
+            )}
             {errors.departamento && (
               <p className="mt-1 text-sm text-red-600">{errors.departamento}</p>
             )}
@@ -466,8 +494,8 @@ const DocumentoForm: React.FC<DocumentoFormProps> = ({
                     : 'Sem tipo específico'}
               </option>
               {tiposFiltrados.map(tipo => (
-                <option key={tipo.value} value={tipo.value}>
-                  {tipo.label}
+                <option key={tipo._id} value={tipo._id}>
+                  {tipo.nome}
                 </option>
               ))}
             </select>

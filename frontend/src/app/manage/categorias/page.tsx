@@ -37,17 +37,37 @@ const CategoriasPage = () => {
 
   // Memorizar a função fetchData para evitar re-renderizações
   const fetchData = useCallback(async (params: any) => {
+    // Combinar params com filtros ativos
+    const combinedParams = {
+      ...params,
+      ...activeFilters
+    };
+
+    // Sanitizar: garantir que todos os valores são primitivos
+    const sanitizedParams: Record<string, any> = {};
+    Object.entries(combinedParams).forEach(([key, value]) => {
+      if (
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean' ||
+        value === undefined ||
+        value === null
+      ) {
+        sanitizedParams[key] = value;
+      } else if (typeof value === 'object' && value !== null && 'value' in value) {
+        // Caso venha de select customizado (ex: { value: 'abc', label: 'Nome' })
+        sanitizedParams[key] = value.value;
+      }
+      // Ignora outros tipos
+    });
+
     // Se for editor, adicionar filtro de departamento
     if (departmentId) {
-      return carregarPaginado({
-        ...params,
-        departamento: departmentId
-      });
+      sanitizedParams.departamento = departmentId;
     }
     
-    // Admin vê todos
-    return carregarPaginado(params);
-  }, [departmentId, carregarPaginado]);
+    return carregarPaginado(sanitizedParams);
+  }, [departmentId, carregarPaginado, activeFilters]);
 
   // Hook de paginação com dados da API
   const {
@@ -108,14 +128,15 @@ const CategoriasPage = () => {
   ];
 
   const handleApplyFilters = (filters: Record<string, any>) => {
+    console.log('📋 Filtros aplicados:', filters);
     setActiveFilters(filters);
-    // TODO: Implementar lógica de filtragem na API
-    console.log('Filtros aplicados:', filters);
+    // O refetch será disparado automaticamente pelo useEffect do usePaginatedData
+    // quando activeFilters mudar (porque fetchData depende de activeFilters)
   };
 
   const handleClearFilters = () => {
     setActiveFilters({});
-    refetch();
+    // O refetch será disparado automaticamente
   };
 
   const handleSearch = async (query: string) => {

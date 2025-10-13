@@ -57,23 +57,30 @@ const TiposPage = () => {
       ...activeFilters
     };
 
-    // Sanitizar: garantir que todos os valores são primitivos
+    // Sanitizar: garantir que todos os valores são primitivos e não vazios
     const sanitizedParams: Record<string, any> = {};
     Object.entries(combinedParams).forEach(([key, value]) => {
+      // Pular valores vazios
+      if (value === '' || value === null || value === undefined) {
+        return;
+      }
+      
       if (
         typeof value === 'string' ||
         typeof value === 'number' ||
-        typeof value === 'boolean' ||
-        value === undefined ||
-        value === null
+        typeof value === 'boolean'
       ) {
         sanitizedParams[key] = value;
       } else if (typeof value === 'object' && value !== null && 'value' in value) {
         // Caso venha de select customizado (ex: { value: 'abc', label: 'Nome' })
-        sanitizedParams[key] = value.value;
+        if (value.value !== '' && value.value !== null && value.value !== undefined) {
+          sanitizedParams[key] = value.value;
+        }
       }
       // Ignora outros tipos
     });
+
+    console.log('🔍 Tipos fetchData - sanitizedParams:', sanitizedParams);
 
     // Se for editor OU se admin filtrou por departamento específico, usar endpoint de departamento
     const departamentoId = !isAdmin() && user?.departamento?._id 
@@ -83,10 +90,12 @@ const TiposPage = () => {
     if (departamentoId) {
       // Remover departamento dos params já que vai na URL
       const { departamento, ...restParams } = sanitizedParams;
+      console.log('🔍 Tipos - Carregando por departamento:', departamentoId, 'com params:', restParams);
       return carregarPorDepartamento(departamentoId, restParams);
     }
 
     // Admin sem filtro de departamento - vê todos
+    console.log('🔍 Tipos - Carregando todos com params:', sanitizedParams);
     return carregarPaginado(sanitizedParams);
   }, [isAdmin, user?.departamento?._id, carregarPorDepartamento, carregarPaginado, activeFilters]);
 
@@ -112,11 +121,13 @@ const TiposPage = () => {
     const loadCategorias = async () => {
       try {
         if (isAdmin()) {
-          await carregarCategorias();
+          // Admin não carrega todas as categorias - apenas quando selecionar departamento
+          setCategoriasLoaded(true);
         } else if (user?.departamento?._id) {
+          // Editor carrega categorias do seu departamento
           await carregarCategoriasPorDep(user.departamento._id, true);
+          setCategoriasLoaded(true);
         }
-        setCategoriasLoaded(true);
       } catch (error) {
         console.error('Erro ao carregar categorias:', error);
       }
@@ -125,6 +136,21 @@ const TiposPage = () => {
     loadCategorias();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.departamento?._id]);
+
+  // Carregar categorias quando admin seleciona departamento
+  useEffect(() => {
+    if (!isAdmin() || !activeFilters.departamento) return;
+    
+    const loadCategoriasPorDept = async () => {
+      try {
+        await carregarCategoriasPorDep(activeFilters.departamento, true);
+      } catch (error) {
+        console.error('Erro ao carregar categorias do departamento:', error);
+      }
+    };
+    
+    loadCategoriasPorDept();
+  }, [activeFilters.departamento, isAdmin, carregarCategoriasPorDep]);
 
   useEffect(() => {
     // Carregar departamentos para admin
@@ -149,7 +175,7 @@ const TiposPage = () => {
       id: 'departamento',
       label: 'Departamento',
       type: 'select',
-      placeholder: 'Todos os departamentos',
+      placeholder: 'Selecione um departamento',
       options: departamentos.map(dept => ({
         id: dept._id,
         label: dept.nome,
@@ -160,21 +186,13 @@ const TiposPage = () => {
       id: 'categoria',
       label: 'Categoria',
       type: 'select',
-      placeholder: 'Todas as categorias',
-      options: categorias
-        .filter(cat => {
-          // Se houver filtro de departamento ativo, mostrar só categorias desse departamento
-          if (activeFilters.departamento) {
-            const catDept = typeof cat.departamento === 'string' ? cat.departamento : cat.departamento?._id;
-            return catDept === activeFilters.departamento;
-          }
-          return true;
-        })
-        .map(cat => ({
-          id: cat._id,
-          label: cat.nome,
-          value: cat._id
-        }))
+      placeholder: activeFilters.departamento ? 'Todas as categorias' : 'Selecione um departamento primeiro',
+      options: categorias.map(cat => ({
+        id: cat._id,
+        label: cat.nome,
+        value: cat._id
+      })),
+      disabled: !activeFilters.departamento // Desabilitar até selecionar departamento
     },
     {
       id: 'ativo',
@@ -212,7 +230,14 @@ const TiposPage = () => {
 
   const handleApplyFilters = (filters: Record<string, any>) => {
     console.log('📋 Filtros aplicados:', filters);
-    setActiveFilters(filters);
+    
+    // Se admin limpou o filtro de departamento, limpar também categoria
+    if (isAdmin() && !filters.departamento && activeFilters.departamento) {
+      const { categoria, ...restFilters } = filters;
+      setActiveFilters(restFilters);
+    } else {
+      setActiveFilters(filters);
+    }
     // O refetch será disparado automaticamente pelo useEffect do usePaginatedData
     // quando activeFilters mudar (porque fetchData depende de activeFilters)
   };

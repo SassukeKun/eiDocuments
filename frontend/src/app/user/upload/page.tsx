@@ -87,13 +87,18 @@ const UploadPage = () => {
   // Carregar tipos e categorias (apenas do departamento do usuário)
   useEffect(() => {
     const loadData = async () => {
-      if (!userDepartmentId) return;
+      if (!userDepartmentId) {
+        console.log('⚠️ Upload - userDepartmentId não disponível');
+        return;
+      }
       
+      console.log('📁 Upload - Carregando categorias do departamento:', userDepartmentId);
       try {
         // Carregar categorias do departamento
         await carregarPorDepartamento(userDepartmentId, true);
+        console.log('✅ Upload - Categorias carregadas');
       } catch (err) {
-        console.error('Erro ao carregar categorias:', err);
+        console.error('❌ Upload - Erro ao carregar categorias:', err);
       }
     };
     
@@ -104,14 +109,19 @@ const UploadPage = () => {
   useEffect(() => {
     const loadTipos = async () => {
       if (categorias.length === 0 || !userDepartmentId) {
+        console.log('⚠️ Upload - Sem categorias ou departamento para carregar tipos');
         setTiposDoDepartamento([]);
         setTiposFiltrados([]);
         return;
       }
       
+      console.log('📄 Upload - Carregando tipos do departamento:', userDepartmentId);
+      console.log('📋 Upload - Categorias disponíveis:', categorias.map(c => ({ id: c._id, nome: c.nome })));
+      
       try {
         // Carregar tipos ativos do departamento do usuário
         const tiposData = await carregarAtivosPorDepartamento(userDepartmentId);
+        console.log('📦 Upload - Tipos recebidos do departamento:', tiposData.length);
         
         // Filtrar apenas tipos que pertencem às categorias do departamento
         const categoriasIds = categorias.map(cat => cat._id);
@@ -120,10 +130,12 @@ const UploadPage = () => {
           return categoriasIds.includes(categoriaId);
         });
         
+        console.log('✅ Upload - Tipos filtrados para este departamento:', tiposFiltradosPorDept.length);
+        
         // Atualizar a lista de tipos disponíveis
         setTiposDoDepartamento(tiposFiltradosPorDept);
       } catch (err) {
-        console.error('Erro ao carregar tipos:', err);
+        console.error('❌ Upload - Erro ao carregar tipos:', err);
       }
     };
     
@@ -133,9 +145,13 @@ const UploadPage = () => {
   // Filtrar tipos baseado na categoria selecionada
   useEffect(() => {
     if (!formData.categoria) {
+      console.log('⚠️ Upload - Nenhuma categoria selecionada, limpando tipos filtrados');
       setTiposFiltrados([]);
       return;
     }
+
+    console.log('🔍 Upload - Filtrando tipos para categoria:', formData.categoria);
+    console.log('📦 Upload - Tipos disponíveis no departamento:', tiposDoDepartamento.length);
 
     const filtrados = tiposDoDepartamento.filter((tipo: TipoDocumento) => {
       // Se tipo.categoria é string (ID)
@@ -146,12 +162,14 @@ const UploadPage = () => {
       return tipo.categoria._id === formData.categoria;
     });
 
+    console.log('✅ Upload - Tipos filtrados para esta categoria:', filtrados.map(t => ({ id: t._id, nome: t.nome })));
     setTiposFiltrados(filtrados);
 
     // Se o tipo selecionado não pertence à categoria, limpar
     if (formData.tipo) {
       const tipoValido = filtrados.find((t: TipoDocumento) => t._id === formData.tipo);
       if (!tipoValido) {
+        console.log('⚠️ Upload - Tipo selecionado não pertence à categoria, limpando');
         setFormData(prev => ({ ...prev, tipo: '' }));
       }
     }

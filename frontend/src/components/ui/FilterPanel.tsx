@@ -16,6 +16,7 @@ export interface FilterField {
   type: 'select' | 'multiselect' | 'date' | 'daterange' | 'text';
   options?: FilterOption[];
   placeholder?: string;
+  disabled?: boolean;
 }
 
 interface FilterPanelProps {
@@ -46,10 +47,25 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   if (!isOpen) return null;
 
   const handleChange = (fieldId: string, value: any) => {
-    setFilters(prev => ({
-      ...prev,
-      [fieldId]: value
-    }));
+    setFilters(prev => {
+      const newFilters = {
+        ...prev,
+        [fieldId]: value
+      };
+      
+      // Se o departamento mudou (e não está vazio), limpar categoria
+      if (fieldId === 'departamento') {
+        if (value) {
+          // Departamento selecionado - limpar categoria para forçar nova seleção
+          delete newFilters.categoria;
+        } else {
+          // Departamento limpo - também limpar categoria
+          delete newFilters.categoria;
+        }
+      }
+      
+      return newFilters;
+    });
   };
 
   const handleApply = () => {
@@ -70,7 +86,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           <select
             value={filters[field.id] || ''}
             onChange={(e) => handleChange(field.id, e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            disabled={field.disabled}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <option value="">{field.placeholder || 'Selecione...'}</option>
             {field.options?.map(opt => (

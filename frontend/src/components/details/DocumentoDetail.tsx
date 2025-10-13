@@ -84,11 +84,14 @@ const DocumentoDetail: React.FC<DocumentoDetailProps> = ({
     }
   };
 
-  const getEntityName = (entity: string | { nome?: string; titulo?: string }): string => {
-    if (typeof entity === 'string') {
-      return 'Carregando...';
+  const getEntityName = (entity: string | { nome?: string; titulo?: string } | null | undefined): string => {
+    if (!entity) {
+      return 'Não informado';
     }
-    return entity?.nome || entity?.titulo || 'N/A';
+    if (typeof entity === 'string') {
+      return 'Não informado';
+    }
+    return entity?.nome || entity?.titulo || 'Não informado';
   };
 
   const getCategoryColor = (categoria: string | CategoriaDocumento) => {

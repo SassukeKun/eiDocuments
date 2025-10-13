@@ -187,6 +187,7 @@ export const useCategorias = () => {
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
       departamento?: string;
+      ativo?: string | boolean;
     }
   ) => {
     try {
@@ -206,6 +207,10 @@ export const useCategorias = () => {
 
       if (params?.departamento) {
         queryParams.departamento = params.departamento;
+      }
+
+      if (params?.ativo !== undefined) {
+        queryParams.ativo = params.ativo === 'true' || params.ativo === true;
       }
 
       const response = await CategoriasService.listar(queryParams);
