@@ -3,14 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, ExternalLink, AlertCircle, FileText, Loader2 } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 import { DocumentosService } from '@/services/documentosService';
 import { Documento } from '@/types';
 
-// Configurar worker do PDF.js
+// Configurar worker do PDF.js usando a versão correta do pdfjs-dist
 if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 }
 
 interface DocumentPreviewProps {
@@ -26,6 +28,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   documento,
   onDownload
 }) => {
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState<any>(null);
@@ -34,12 +37,17 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   const [documentBlob, setDocumentBlob] = useState<Blob | null>(null);
   const [documentUrl, setDocumentUrl] = useState<string>('');
 
+  // Garantir que só renderiza no cliente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Extrair informações do documento
   const fileName = documento?.titulo || documento?.arquivo?.originalName || 'documento';
   const fileType = documento?.arquivo?.originalName?.split('.').pop()?.toLowerCase() || 'unknown';
 
   useEffect(() => {
-    if (isOpen && documento?._id) {
+    if (isOpen && documento?._id && mounted) {
       loadDocumentFromService();
     }
     
@@ -50,7 +58,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
         setDocumentUrl('');
       }
     };
-  }, [isOpen, documento?._id]);
+  }, [isOpen, documento?._id, mounted]);
 
   const loadDocumentFromService = async () => {
     setLoading(true);
@@ -335,6 +343,9 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
     return renderUnsupportedPreview();
   };
 
+  // Não renderizar durante SSR
+  if (!mounted) return null;
+  
   if (!isOpen) return null;
 
   if (error) {

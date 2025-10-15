@@ -144,27 +144,22 @@ export class DocumentosService {
     return apiGet<ApiPaginatedResponse<Documento>>(`/documentos/usuario/${usuarioId}`, params as Record<string, string | number | boolean>);
   }
 
-  // Download de documento
+  // Download de documento via backend (armazenamento local)
   static async download(id: string): Promise<Blob> {
-    // Opção 1: Usar endpoint do backend (atual - pode ter problemas de proxy)
-    // const response = await fetch(
-    //   `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api'}/documentos/${id}/download`,
-    //   { credentials: 'include' }
-    // );
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
     
-    // Opção 2 (MELHOR): Buscar a URL direta do Cloudinary e baixar de lá
-    const documentoResponse = await this.buscarPorId(id);
-    const secureUrl = documentoResponse.data?.arquivo?.secureUrl;
-    
-    if (!secureUrl) {
-      throw new Error('URL do arquivo não encontrada');
-    }
-    
-    // Baixar diretamente do Cloudinary (sem passar pelo backend)
-    const response = await fetch(secureUrl);
+    const response = await fetch(
+      `${API_BASE_URL}/documentos/${id}/download`,
+      { 
+        credentials: 'include',
+        headers: {
+          'Accept': '*/*',
+        }
+      }
+    );
     
     if (!response.ok) {
-      throw new Error(`Erro no download: ${response.status}`);
+      throw new Error(`Erro no download: ${response.status} ${response.statusText}`);
     }
     
     return response.blob();

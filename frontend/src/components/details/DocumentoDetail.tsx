@@ -1,8 +1,13 @@
 "use client";
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import DetailModal from '@/components/ui/DetailModal';
-import { DocumentPreview } from '@/components/ui/DocumentPreview';
+// Dynamic import to avoid SSR issues with react-pdf
+const DocumentPreview = dynamic(
+  () => import('@/components/ui/DocumentPreview').then(mod => ({ default: mod.DocumentPreview })),
+  { ssr: false, loading: () => <div>Carregando preview...</div> }
+);
 import { Documento, CategoriaDocumento } from '@/types';
 import { 
   FileText, 
