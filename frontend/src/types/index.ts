@@ -175,6 +175,7 @@ export interface CreateDocumento {
   categoria: string;
   tipo?: string; // OPCIONAL - algumas categorias não têm tipos específicos
   departamento: string;
+  usuario?: string; // OPCIONAL - se não enviado, backend usa req.user (JWT)
   tipoMovimento: 'enviado' | 'recebido' | 'interno';
   remetente?: string;
   destinatario?: string;

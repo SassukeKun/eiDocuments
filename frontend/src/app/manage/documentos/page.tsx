@@ -172,33 +172,16 @@ const DocumentosPage = () => {
     {
       key: 'categoria',
       title: 'Categoria',
-      width: 'w-28',
-      render: (value) => (
+      width: 'w-32',
+      render: (value, record: any) => (
         <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full bg-${value.cor}-500`}></div>
-          <span className="text-sm">{value.nome}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'tags',
-      title: 'Tags',
-      width: 'w-40',
-      render: (value) => (
-        <div className="flex flex-wrap gap-1">
-          {value.slice(0, 2).map((tag: string, index: number) => (
-            <span
-              key={index}
-              className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
-          {value.length > 2 && (
-            <span className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-              +{value.length - 2}
-            </span>
-          )}
+          <div className={`w-3 h-3 rounded-full bg-${value.cor}-500 flex-shrink-0`}></div>
+          <div>
+            <div className="font-medium text-sm">{value.nome}</div>
+            {record.tipo && (
+              <div className="text-xs text-gray-500">{record.tipo.nome}</div>
+            )}
+          </div>
         </div>
       ),
     },
@@ -253,22 +236,6 @@ const DocumentosPage = () => {
       render: (value) => (
         <span className="text-sm text-gray-600">
           {new Date(value).toLocaleDateString('pt-BR')}
-        </span>
-      ),
-    },
-    {
-      key: 'ativo',
-      title: 'Status',
-      width: 'w-20',
-      render: (value) => (
-        <span
-          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-            value
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}
-        >
-          {value ? 'Ativo' : 'Inativo'}
         </span>
       ),
     },

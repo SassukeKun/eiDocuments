@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import UserLayout from '@/components/ui/UserLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable, { TableColumn, TableAction } from '@/components/ui/DataTable';
-import { FileText, Eye, Download, Building2, FolderOpen, Tag, Calendar, User, Edit } from 'lucide-react';
+import { FileText, Eye, Download, Building2, FolderOpen, Calendar, User, Edit } from 'lucide-react';
 import { Documento } from '@/types';
 import { useDocumentos } from '@/hooks/useDocumentos';
 import { useAuth } from '@/hooks/useAuth';
@@ -208,10 +208,15 @@ const DocumentosDepartamentoPage = () => {
       key: 'categoria',
       title: 'Categoria',
       width: 'w-32',
-      render: (value: any) => (
+      render: (value: any, record: any) => (
         <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full bg-${value?.cor || 'gray'}-500`}></div>
-          <span className="text-sm font-medium">{value?.nome || 'N/A'}</span>
+          <div className={`w-3 h-3 rounded-full bg-${value?.cor || 'gray'}-500 flex-shrink-0`}></div>
+          <div>
+            <div className="font-medium text-sm">{value?.nome || 'N/A'}</div>
+            {record.tipo && (
+              <div className="text-xs text-gray-500">{record.tipo.nome}</div>
+            )}
+          </div>
         </div>
       ),
     },
@@ -223,29 +228,6 @@ const DocumentosDepartamentoPage = () => {
       render: (value, record: any) => getMovementBadge(value, record),
     },
     {
-      key: 'tags',
-      title: 'Tags',
-      width: 'w-32',
-      render: (value: string[]) => (
-        <div className="flex flex-wrap gap-1">
-          {value?.slice(0, 2).map((tag: string, index: number) => (
-            <span
-              key={index}
-              className="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
-            >
-              <Tag className="w-3 h-3 mr-1" />
-              {tag}
-            </span>
-          )) || []}
-          {value?.length > 2 && (
-            <span className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-              +{value.length - 2}
-            </span>
-          )}
-        </div>
-      ),
-    },
-    {
       key: 'dataCriacao',
       title: 'Data',
       sortable: true,
@@ -255,22 +237,6 @@ const DocumentosDepartamentoPage = () => {
           <Calendar className="w-4 h-4" />
           <span>{formatDate(value)}</span>
         </div>
-      ),
-    },
-    {
-      key: 'ativo',
-      title: 'Status',
-      width: 'w-20',
-      render: (value) => (
-        <span
-          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-            value
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}
-        >
-          {value ? 'Ativo' : 'Inativo'}
-        </span>
       ),
     },
     {
